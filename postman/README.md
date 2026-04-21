@@ -27,8 +27,13 @@ Use the VS Code Postman extension only after the shared workspace exists and the
 4. Import these environments:
    1. `postman/environments/local.environment.json`
    2. `postman/environments/demo.environment.json`
-5. Set `baseUrl`, `accessToken`, and `adminToken` in the selected environment.
-6. Invite these members to the workspace:
+5. Set `baseUrl` in the selected environment.
+6. Keep `accessToken` and `adminToken` empty until the backend implements real auth and issues them.
+7. Use the default demo credentials already included in the environments for local testing:
+   1. User: `student@example.com` / `ChangeMe123!`
+   2. Admin: `admin@example.com` / `ChangeMe123!`
+8. Once auth exists, run the login requests to populate tokens automatically or copy the returned bearer token into the environment.
+9. Invite these members to the workspace:
    1. `snehadhaya55@gmail.com`
    2. `Imbnethminichinth@gmail.com`
    3. `Kesavanabinayan12@gmail.com`
@@ -46,8 +51,27 @@ Use the VS Code Postman extension only after the shared workspace exists and the
 | `commentId` | Sample or captured ticket comment identifier |
 | `notificationId` | Sample or captured notification identifier |
 | `userEmail` | Standard user account email |
+| `userPassword` | Standard user account password |
 | `adminEmail` | Admin account email |
+| `adminPassword` | Admin account password |
 | `technicianEmail` | Technician account email |
+
+## Token Status Right Now
+This repo does not have a working auth backend yet, so you cannot honestly generate real `accessToken` or `adminToken` values from the current codebase.
+
+At the moment:
+- `accessToken` and `adminToken` should stay empty in Postman
+- signup and login requests are scaffolded for the future real flow
+- protected requests are placeholders until the backend implements JWT or another bearer-token flow
+
+Planned real flow:
+1. `POST /auth/signup` to create a normal user if needed
+2. `POST /auth/login` with `student@example.com` to get `{{accessToken}}`
+3. `POST /auth/login` with `admin@example.com` to get `{{adminToken}}`
+
+Expected login response:
+- The backend should return a bearer token field such as `token` or `accessToken`
+- The Postman login requests are prepared to save either field automatically once the API exists
 
 ## Working Agreement
 - Each member should mainly update the collection they own.
@@ -60,6 +84,7 @@ Use the VS Code Postman extension only after the shared workspace exists and the
 - Every owner collection should show at least four scaffolded requests across `GET`, `POST`, `PUT/PATCH`, and `DELETE`.
 - Replace placeholder paths and bodies only when the backend route and payload are agreed by the team.
 - After updating a collection in Postman, export it back into this repo and commit the updated JSON to `dev`.
+- Do not paste fake JWT strings into `accessToken` or `adminToken` just to make the environment look complete. Only use tokens actually returned by the backend.
 
 ## GitHub Integration
 Primary integration is Git-based versioning of exported Postman JSON files in this repository.
@@ -82,6 +107,7 @@ Fine-grained PAT guidance:
 - Validation and role-based access scenarios are separated into dedicated folders.
 - Exported JSON files in Git provide concrete testing evidence even before the backend is fully complete.
 - The GitHub workflow in `.github/workflows/validate-postman-artifacts.yml` validates these Postman artifacts on push and pull request activity.
+- The auth collection documents that real tokens are pending backend implementation instead of claiming fake or hard-coded tokens.
 
 ## Manual Postman UI Checklist
 These actions still require your logged-in Postman account and cannot be completed from this repo alone:
