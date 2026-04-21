@@ -1,0 +1,140 @@
+{
+  "info": {
+    "_postman_id": "b05f463f-faad-4d45-948f-63eb8f88f34a",
+    "name": "00 Health and Smoke",
+    "description": "Shared smoke checks and bootstrap requests for the Smart Campus platform.\n\nUse this collection for quick sanity checks before running module-specific collections.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Happy Path",
+      "item": [
+        {
+          "name": "GET Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /actuator/health`\nExpected role: public\nExpected status: `200 OK`\nTODO: Bind this to the final Spring Boot health endpoint when the backend is ready.",
+            "url": "{{baseUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "GET Authenticated Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /users/me`\nExpected role: authenticated user\nExpected status: `200 OK`\nTODO: Replace this placeholder path if the profile route uses a different URI.",
+            "url": "{{baseUrl}}/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Validation and Errors",
+      "item": [
+        {
+          "name": "GET Missing Route",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /__missing_route__`\nExpected role: public\nExpected status: `404 Not Found`\nTODO: Keep one negative smoke check in the suite to demonstrate error handling.",
+            "url": "{{baseUrl}}/__missing_route__"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Role and Access",
+      "item": [
+        {
+          "name": "GET Admin Dashboard Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /admin/dashboard/summary`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Replace this with the final admin-only smoke endpoint if the dashboard summary lives elsewhere.",
+            "url": "{{baseUrl}}/admin/dashboard/summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Draft or Placeholder",
+      "item": [
+        {
+          "name": "POST Seed Demo Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profile\": \"group58-demo\"\n}"
+            },
+            "description": "Intended endpoint: `POST /admin/seed`\nExpected role: `ADMIN`\nExpected status: `202 Accepted`\nTODO: Keep this disabled until a demo data bootstrap route actually exists.",
+            "url": "{{baseUrl}}/admin/seed"
+          }
+        }
+      ]
+    }
+  ]
+}
