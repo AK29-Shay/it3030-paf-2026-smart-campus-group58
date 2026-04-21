@@ -1,0 +1,189 @@
+{
+  "info": {
+    "_postman_id": "d8c0e597-d1c7-4699-b02a-1332d6e84603",
+    "name": "01 Resources",
+    "description": "Module owner: You\n\nScope: Facilities and assets catalogue.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 Happy Path",
+      "item": [
+        {
+          "name": "GET List Resources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /resources`\nExpected role: `USER` or `ADMIN`\nExpected status: `200 OK`\nTODO: Adjust filters once the backend query shape is finalized.",
+            "url": "{{baseUrl}}/resources?type=LECTURE_HALL&capacity=50&location=Main%20Block"
+          }
+        },
+        {
+          "name": "POST Create Resource",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lecture Hall A\",\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": 120,\n  \"location\": \"Main Building - Level 2\",\n  \"availabilityWindow\": \"MON-FRI 08:00-18:00\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "description": "Intended endpoint: `POST /resources`\nExpected role: `ADMIN`\nExpected status: `201 Created`\nTODO: Replace the placeholder payload with the final DTO fields from the backend.",
+            "url": "{{baseUrl}}/resources"
+          }
+        },
+        {
+          "name": "PATCH Update Resource Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"OUT_OF_SERVICE\"\n}"
+            },
+            "description": "Intended endpoint: `PATCH /resources/{{resourceId}}/status`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Update the path if the team chooses a different status-update route.",
+            "url": "{{baseUrl}}/resources/{{resourceId}}/status"
+          }
+        },
+        {
+          "name": "DELETE Delete Resource",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "description": "Intended endpoint: `DELETE /resources/{{resourceId}}`\nExpected role: `ADMIN`\nExpected status: `204 No Content`\nTODO: Keep this only if the final design allows deletion instead of pure status-based retirement.",
+            "url": "{{baseUrl}}/resources/{{resourceId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Validation and Errors",
+      "item": [
+        {
+          "name": "POST Create Resource",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": -1,\n  \"location\": \"\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "description": "Intended endpoint: `POST /resources`\nExpected role: `ADMIN`\nExpected status: `400 Bad Request`\nTODO: Convert this to the real validation-failure payload once bean validation rules exist.",
+            "url": "{{baseUrl}}/resources"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Role and Access",
+      "item": [
+        {
+          "name": "PATCH Update Resource Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"OUT_OF_SERVICE\"\n}"
+            },
+            "description": "Intended endpoint: `PATCH /resources/{{resourceId}}/status`\nExpected role: `ADMIN`\nExpected status: `403 Forbidden` when run with `{{accessToken}}`\nTODO: Keep this request wired to a normal user token to prove role-based access control.",
+            "url": "{{baseUrl}}/resources/{{resourceId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Draft or Placeholder",
+      "item": [
+        {
+          "name": "GET List Resources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /resources/availability`\nExpected role: `USER` or `ADMIN`\nExpected status: `200 OK`\nTODO: Use this draft request if the team exposes separate availability windows outside the main catalogue query.",
+            "url": "{{baseUrl}}/resources/availability?date=2026-04-28"
+          }
+        }
+      ]
+    }
+  ]
+}

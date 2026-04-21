@@ -1,0 +1,169 @@
+{
+  "info": {
+    "_postman_id": "0e5e234a-ece2-4af1-bf54-0b76569bf49c",
+    "name": "02 Bookings",
+    "description": "Module owner: snehadhaya55@gmail.com\n\nScope: Booking creation, approval workflow, rejection handling, and cancellation.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 Happy Path",
+      "item": [
+        {
+          "name": "POST Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"bookingDate\": \"2026-04-28\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"purpose\": \"PAF group client demo rehearsal\",\n  \"expectedAttendees\": 6\n}"
+            },
+            "description": "Intended endpoint: `POST /bookings`\nExpected role: authenticated user\nExpected status: `201 Created`\nTODO: Replace the date and attendee fields if the final DTO differs.",
+            "url": "{{baseUrl}}/bookings"
+          }
+        },
+        {
+          "name": "GET List Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /bookings?mine=true`\nExpected role: authenticated user\nExpected status: `200 OK`\nTODO: Switch to the final route used for the current user's booking list.",
+            "url": "{{baseUrl}}/bookings?mine=true"
+          }
+        },
+        {
+          "name": "PATCH Approve Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"reason\": \"Approved for the rehearsal slot\"\n}"
+            },
+            "description": "Intended endpoint: `PATCH /bookings/{{bookingId}}/approval`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Use the final approval or rejection route chosen by the booking workflow owner.",
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/approval"
+          }
+        },
+        {
+          "name": "DELETE Cancel Booking",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "description": "Intended endpoint: `DELETE /bookings/{{bookingId}}`\nExpected role: booking owner or `ADMIN`\nExpected status: `204 No Content`\nTODO: Keep this request if cancellation is modelled as delete instead of a status-only update.",
+            "url": "{{baseUrl}}/bookings/{{bookingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Validation and Errors",
+      "item": [
+        {
+          "name": "POST Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"bookingDate\": \"2026-04-28\",\n  \"startTime\": \"10:30\",\n  \"endTime\": \"11:30\",\n  \"purpose\": \"Conflicting slot test\",\n  \"expectedAttendees\": 4\n}"
+            },
+            "description": "Intended endpoint: `POST /bookings`\nExpected role: authenticated user\nExpected status: `409 Conflict`\nTODO: Run this after at least one approved booking exists for the same resource and time range.",
+            "url": "{{baseUrl}}/bookings"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Role and Access",
+      "item": [
+        {
+          "name": "PATCH Approve Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"reason\": \"Should fail for non-admin\"\n}"
+            },
+            "description": "Intended endpoint: `PATCH /bookings/{{bookingId}}/approval`\nExpected role: `ADMIN`\nExpected status: `403 Forbidden` when run with `{{accessToken}}`\nTODO: Keep this request as the booking approval authorization proof.",
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/approval"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Draft or Placeholder",
+      "item": [
+        {
+          "name": "GET List Bookings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /bookings?status=PENDING&date=2026-04-28`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Use this request for admin-only booking reviews with filters.",
+            "url": "{{baseUrl}}/bookings?status=PENDING&date=2026-04-28"
+          }
+        }
+      ]
+    }
+  ]
+}

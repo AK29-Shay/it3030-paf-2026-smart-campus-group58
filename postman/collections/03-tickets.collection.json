@@ -1,0 +1,154 @@
+{
+  "info": {
+    "_postman_id": "0abedbd0-1558-4664-87e8-ae419b923fa3",
+    "name": "03 Tickets",
+    "description": "Module owner: Imbnethminichinth@gmail.com\n\nScope: Incident tickets, comments, technician-facing updates, and comment ownership rules.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 Happy Path",
+      "item": [
+        {
+          "name": "POST Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"location\": \"Main Block - Lab 3\",\n  \"category\": \"ELECTRICAL\",\n  \"priority\": \"HIGH\",\n  \"description\": \"Projector is not powering on and the indicator is blinking red.\",\n  \"preferredContact\": \"{{userEmail}}\",\n  \"attachmentRefs\": [\n    \"evidence-projector-front.jpg\",\n    \"error-screen.jpg\"\n  ]\n}"
+            },
+            "description": "Intended endpoint: `POST /tickets`\nExpected role: authenticated user\nExpected status: `201 Created`\nTODO: Replace the placeholder attachment representation with the final safe file-upload design.",
+            "url": "{{baseUrl}}/tickets"
+          }
+        },
+        {
+          "name": "GET List Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Intended endpoint: `GET /tickets?mine=true`\nExpected role: authenticated user\nExpected status: `200 OK`\nTODO: Switch this to the final user ticket listing route if the query shape changes.",
+            "url": "{{baseUrl}}/tickets?mine=true"
+          }
+        },
+        {
+          "name": "PATCH Update Ticket Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"resolutionNote\": \"Assigned to the facilities technician for inspection.\"\n}"
+            },
+            "description": "Intended endpoint: `PATCH /tickets/{{ticketId}}/status`\nExpected role: `ADMIN` or `TECHNICIAN`\nExpected status: `200 OK`\nTODO: Bind this to the final status-transition route and enum values.",
+            "url": "{{baseUrl}}/tickets/{{ticketId}}/status"
+          }
+        },
+        {
+          "name": "DELETE Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "description": "Intended endpoint: `DELETE /tickets/{{ticketId}}/comments/{{commentId}}`\nExpected role: comment owner or privileged staff\nExpected status: `204 No Content`\nTODO: Keep this request aligned with the final comment ownership rules.",
+            "url": "{{baseUrl}}/tickets/{{ticketId}}/comments/{{commentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Validation and Errors",
+      "item": [
+        {
+          "name": "POST Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"location\": \"\",\n  \"priority\": \"HIGH\",\n  \"description\": \"\",\n  \"preferredContact\": \"not-an-email\"\n}"
+            },
+            "description": "Intended endpoint: `POST /tickets`\nExpected role: authenticated user\nExpected status: `400 Bad Request`\nTODO: Replace this with the real invalid payload once the validation annotations are finalized.",
+            "url": "{{baseUrl}}/tickets"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Role and Access",
+      "item": [
+        {
+          "name": "DELETE Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "description": "Intended endpoint: `DELETE /tickets/{{ticketId}}/comments/{{commentId}}`\nExpected role: comment owner or privileged staff\nExpected status: `403 Forbidden` when deleting another user's comment with `{{accessToken}}`\nTODO: Use this request to prove comment ownership enforcement.",
+            "url": "{{baseUrl}}/tickets/{{ticketId}}/comments/{{commentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Draft or Placeholder",
+      "item": [
+        {
+          "name": "POST Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"The issue still happens during the first lecture session.\"\n}"
+            },
+            "description": "Intended endpoint: `POST /tickets/{{ticketId}}/comments`\nExpected role: authenticated user or staff participant\nExpected status: `201 Created`\nTODO: Move this request into the happy-path folder once the comment API is stable.",
+            "url": "{{baseUrl}}/tickets/{{ticketId}}/comments"
+          }
+        }
+      ]
+    }
+  ]
+}
