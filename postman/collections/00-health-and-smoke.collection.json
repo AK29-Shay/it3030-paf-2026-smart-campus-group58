@@ -1,0 +1,201 @@
+{
+  "info": {
+    "_postman_id": "b05f463f-faad-4d45-948f-63eb8f88f34a",
+    "name": "00 Health and Smoke",
+    "description": "Shared smoke checks and bootstrap requests for the Smart Campus platform.\n\nThe local auth demo now implements `GET /actuator/health`, `GET /users/me`, and `GET /admin/dashboard/summary`, so these requests can be used as real smoke checks instead of placeholders.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Happy Path",
+      "item": [
+        {
+          "name": "GET Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health check returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Health check returns UP status', function () {",
+                  "  pm.expect(pm.response.json().status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Implemented locally by the auth demo backend.\nExpected role: public\nExpected status: `200 OK` with `{ \"status\": \"UP\" }`.",
+            "url": "{{baseUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "GET Authenticated Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile request returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Profile response contains the seeded user email', function () {",
+                  "  pm.expect(pm.response.json().email).to.eql(pm.environment.get('userEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Implemented locally by the auth demo backend.\nExpected role: authenticated user\nExpected status: `200 OK` with the current user's name, email, and role.",
+            "url": "{{baseUrl}}/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Validation and Errors",
+      "item": [
+        {
+          "name": "GET Missing Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing route returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Expected role: public\nExpected status: `404 Not Found`.\nUse this to prove consistent JSON error handling for unknown routes.",
+            "url": "{{baseUrl}}/__missing_route__"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Role and Access",
+      "item": [
+        {
+          "name": "GET Admin Dashboard Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin summary returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Admin summary contains totalUsers', function () {",
+                  "  pm.expect(pm.response.json()).to.have.property('totalUsers');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Implemented locally by the auth demo backend.\nExpected role: `ADMIN`\nExpected status: `200 OK` with a small admin summary payload.",
+            "url": "{{baseUrl}}/admin/dashboard/summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Draft or Placeholder",
+      "item": [
+        {
+          "name": "POST Seed Demo Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profile\": \"group58-demo\"\n}"
+            },
+            "description": "Still a placeholder.\nExpected role: `ADMIN`\nExpected status: `202 Accepted` only after a dedicated seeding endpoint exists.",
+            "url": "{{baseUrl}}/admin/seed"
+          }
+        }
+      ]
+    }
+  ]
+}

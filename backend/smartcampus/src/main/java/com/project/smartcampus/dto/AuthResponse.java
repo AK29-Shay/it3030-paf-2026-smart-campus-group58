@@ -1,28 +1,63 @@
 package com.project.smartcampus.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.project.smartcampus.enums.Role;
 
-/**
- * Response DTO for authentication, containing JWT token and user info.
- */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class AuthResponse {
+    private final String accessToken;
+    private final String email;
+    private final Role role;
+    private final String tokenType;
+    private final Object user;
 
-    private String token;
-    private String tokenType;
-    private UserDTO user;
+    public AuthResponse(String accessToken, String email, Role role) {
+        this(accessToken, email, role, "Bearer", null);
+    }
 
-    public static AuthResponse of(String token, UserDTO user) {
-        return AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .user(user)
-                .build();
+    private AuthResponse(String accessToken, String email, Role role, String tokenType, Object user) {
+        this.accessToken = accessToken;
+        this.email = email;
+        this.role = role;
+        this.tokenType = tokenType;
+        this.user = user;
+    }
+
+    public static AuthResponse of(String token, Object user) {
+        return new AuthResponse(token, null, null, "Bearer", user);
+    }
+
+    public String accessToken() {
+        return accessToken;
+    }
+
+    public String email() {
+        return email;
+    }
+
+    public Role role() {
+        return role;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public String getToken() {
+        return accessToken;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public Object getUser() {
+        return user;
     }
 }

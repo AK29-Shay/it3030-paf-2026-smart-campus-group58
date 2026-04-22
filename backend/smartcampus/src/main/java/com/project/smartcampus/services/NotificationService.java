@@ -2,179 +2,115 @@ package com.project.smartcampus.services;
 
 import com.project.smartcampus.dto.NotificationDTO;
 import com.project.smartcampus.exception.ResourceNotFoundException;
-import com.project.smartcampus.exception.UnauthorizedException;
-import com.project.smartcampus.entity.Notification;
 import com.project.smartcampus.enums.NotificationType;
-import com.project.smartcampus.entity.User;
-import com.project.smartcampus.repository.NotificationRepository;
-import com.project.smartcampus.repository.UserRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Service for managing notifications.
- * Provides methods for creating, reading, marking, and deleting notifications.
- * Also exposes convenience methods for other modules to send typed notifications.
- */
-@Slf4j
 @Service
 public class NotificationService {
+    private final Map<String, LinkedHashMap<String, NotificationDTO>> notificationsByRecipient = new ConcurrentHashMap<>();
+    private final AtomicLong nextNotificationId = new AtomicLong(1);
 
-    private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
-
-    public NotificationService(NotificationRepository notificationRepository,
-                               UserRepository userRepository) {
-        this.notificationRepository = notificationRepository;
-        this.userRepository = userRepository;
+    public void seedDefaults(String userEmail, String adminEmail) {
+        ensureUser(userEmail);
+        ensureUser(adminEmail);
+        addNotification(userEmail, null, "Welcome", "Your Smart Campus account is ready.", null, null);
+        addNotification(userEmail, null, "Booking Updates", "Your next booking update will appear here.", null, null);
+        addNotification(adminEmail, null, "Admin Access", "Admin dashboard access is active.", null, null);
     }
 
-    /**
-     * Creates and saves a new notification for a user.
-     *
-     * @param recipientId   ID of the user to notify
-     * @param type          type of notification
-     * @param title         short notification title
-     * @param message       full notification message (max 500 chars)
-     * @param referenceId   ID of the related booking/ticket (nullable)
-     * @param referenceType "BOOKING" or "TICKET" (nullable)
-     * @return the created notification as a DTO
-     */
-    public NotificationDTO createNotification(Long recipientId, NotificationType type,
-                                              String title, String message,
-                                              Long referenceId, String referenceType) {
-        User recipient = userRepository.findById(recipientId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + recipientId));
-
-        Notification notification = Notification.builder()
-                .recipient(recipient)
-                .type(type)
-                .title(title)
-                .message(message)
-                .referenceId(referenceId)
-                .referenceType(referenceType)
-                .isRead(false)
-                .build();
-
-        Notification saved = notificationRepository.save(notification);
-        log.info("Notification created for user {}: {}", recipientId, type);
-        return NotificationDTO.fromNotification(saved);
+    public void ensureUser(String email) {
+        ensureRecipient(recipientKey(email));
     }
 
-    /**
-     * Retrieves all notifications for a user, ordered by newest first.
-     *
-     * @param userId the user's ID
-     * @return list of notification DTOs
-     */
+    public List<NotificationDTO> listNotifications(String email, Boolean readFilter) {
+        return filterNotifications(recipientKey(email), readFilter);
+    }
+
+    public NotificationDTO markNotification(String email, String id, boolean read) {
+        return markNotificationInternal(recipientKey(email), id, read);
+    }
+
+    public void deleteNotification(String email, String id) {
+        deleteNotificationInternal(recipientKey(email), id);
+    }
+
+    public int totalNotifications(String email) {
+        ensureUser(email);
+        return notificationsByRecipient.get(recipientKey(email)).size();
+    }
+
+    public int unreadNotifications(String email) {
+        return filterNotifications(recipientKey(email), false).size();
+    }
+
+    public void addWelcomeNotification(String email, String name) {
+        addNotification(email, NotificationType.ROLE_CHANGED, "Welcome", "Welcome to Smart Campus, " + name + ".", null, null);
+    }
+
+    public NotificationDTO createNotification(
+            Long recipientId,
+            NotificationType type,
+            String title,
+            String message,
+            Long referenceId,
+            String referenceType) {
+        NotificationDTO notification = createNotificationRecord(
+                String.valueOf(nextNotificationId.getAndIncrement()),
+                recipientId,
+                type,
+                title,
+                message,
+                referenceId,
+                referenceType);
+        storeNotification(recipientKey(recipientId), notification);
+        return notification;
+    }
+
     public List<NotificationDTO> getNotificationsForUser(Long userId) {
-        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(NotificationDTO::fromNotification)
-                .collect(Collectors.toList());
+        return filterNotifications(recipientKey(userId), null);
     }
 
-    /**
-     * Retrieves only unread notifications for a user.
-     *
-     * @param userId the user's ID
-     * @return list of unread notification DTOs
-     */
     public List<NotificationDTO> getUnreadNotifications(Long userId) {
-        return notificationRepository.findByRecipientIdAndIsReadFalseOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(NotificationDTO::fromNotification)
-                .collect(Collectors.toList());
+        return filterNotifications(recipientKey(userId), false);
     }
 
-    /**
-     * Returns the count of unread notifications for a user.
-     *
-     * @param userId the user's ID
-     * @return unread count
-     */
     public long getUnreadCount(Long userId) {
-        return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
+        return getUnreadNotifications(userId).size();
     }
 
-    /**
-     * Marks a single notification as read. Verifies the notification belongs to the requesting user.
-     *
-     * @param notificationId ID of the notification to mark as read
-     * @param userId         ID of the requesting user
-     * @return updated notification DTO
-     */
-    @Transactional
     public NotificationDTO markAsRead(Long notificationId, Long userId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
-
-        if (!notification.getRecipient().getId().equals(userId)) {
-            throw new UnauthorizedException("You do not have access to this notification");
-        }
-
-        notification.setRead(true);
-        Notification updated = notificationRepository.save(notification);
-        return NotificationDTO.fromNotification(updated);
+        return markNotificationInternal(recipientKey(userId), String.valueOf(notificationId), true);
     }
 
-    /**
-     * Marks all notifications for a user as read.
-     *
-     * @param userId the user's ID
-     */
-    @Transactional
     public void markAllAsRead(Long userId) {
-        List<Notification> unread = notificationRepository
-                .findByRecipientIdAndIsReadFalseOrderByCreatedAtDesc(userId);
-        unread.forEach(n -> n.setRead(true));
-        notificationRepository.saveAll(unread);
-        log.info("Marked all notifications as read for user {}", userId);
+        markAllAsReadKey(recipientKey(userId));
     }
 
-    /**
-     * Deletes a single notification. Verifies the notification belongs to the requesting user.
-     *
-     * @param notificationId ID of the notification to delete
-     * @param userId         ID of the requesting user
-     */
-    @Transactional
+    public void markAllAsRead(String email) {
+        markAllAsReadKey(recipientKey(email));
+    }
+
     public void deleteNotification(Long notificationId, Long userId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
-
-        if (!notification.getRecipient().getId().equals(userId)) {
-            throw new UnauthorizedException("You do not have access to this notification");
-        }
-
-        notificationRepository.delete(notification);
-        log.info("Deleted notification {} for user {}", notificationId, userId);
+        deleteNotificationInternal(recipientKey(userId), String.valueOf(notificationId));
     }
 
-    /**
-     * Deletes all notifications for a user.
-     *
-     * @param userId the user's ID
-     */
-    @Transactional
     public void clearAllNotifications(Long userId) {
-        notificationRepository.deleteByRecipientId(userId);
-        log.info("Cleared all notifications for user {}", userId);
+        clearAllNotificationsKey(recipientKey(userId));
     }
 
-    // ─── Convenience methods for other modules ──────────────────────────────
+    public void clearAllNotifications(String email) {
+        clearAllNotificationsKey(recipientKey(email));
+    }
 
-    /**
-     * Notifies a user that their booking was approved.
-     *
-     * @param userId       ID of the user who made the booking
-     * @param bookingId    ID of the approved booking
-     * @param resourceName name of the booked resource
-     */
     public void notifyBookingApproved(Long userId, Long bookingId, String resourceName) {
         createNotification(
                 userId,
@@ -182,18 +118,9 @@ public class NotificationService {
                 "Booking Approved",
                 "Your booking for \"" + resourceName + "\" has been approved.",
                 bookingId,
-                "BOOKING"
-        );
+                "BOOKING");
     }
 
-    /**
-     * Notifies a user that their booking was rejected.
-     *
-     * @param userId       ID of the user who made the booking
-     * @param bookingId    ID of the rejected booking
-     * @param resourceName name of the resource
-     * @param reason       reason for rejection
-     */
     public void notifyBookingRejected(Long userId, Long bookingId, String resourceName, String reason) {
         createNotification(
                 userId,
@@ -201,17 +128,9 @@ public class NotificationService {
                 "Booking Rejected",
                 "Your booking for \"" + resourceName + "\" was rejected. Reason: " + reason,
                 bookingId,
-                "BOOKING"
-        );
+                "BOOKING");
     }
 
-    /**
-     * Notifies a user that their ticket's status has changed.
-     *
-     * @param userId    ID of the ticket creator
-     * @param ticketId  ID of the ticket
-     * @param newStatus new status string
-     */
     public void notifyTicketStatusChanged(Long userId, Long ticketId, String newStatus) {
         createNotification(
                 userId,
@@ -219,17 +138,9 @@ public class NotificationService {
                 "Ticket Status Updated",
                 "Your ticket status has been changed to: " + newStatus,
                 ticketId,
-                "TICKET"
-        );
+                "TICKET");
     }
 
-    /**
-     * Notifies a technician that a ticket has been assigned to them.
-     *
-     * @param technicianId ID of the technician
-     * @param ticketId     ID of the assigned ticket
-     * @param ticketTitle  title of the ticket
-     */
     public void notifyTicketAssigned(Long technicianId, Long ticketId, String ticketTitle) {
         createNotification(
                 technicianId,
@@ -237,17 +148,9 @@ public class NotificationService {
                 "New Ticket Assigned",
                 "You have been assigned to ticket: \"" + ticketTitle + "\"",
                 ticketId,
-                "TICKET"
-        );
+                "TICKET");
     }
 
-    /**
-     * Notifies a user that a new comment was added to their ticket.
-     *
-     * @param userId        ID of the ticket owner
-     * @param ticketId      ID of the ticket
-     * @param commenterName name of the person who commented
-     */
     public void notifyNewComment(Long userId, Long ticketId, String commenterName) {
         createNotification(
                 userId,
@@ -255,7 +158,125 @@ public class NotificationService {
                 "New Comment on Your Ticket",
                 commenterName + " added a comment to your ticket.",
                 ticketId,
-                "TICKET"
-        );
+                "TICKET");
+    }
+
+    private NotificationDTO createNotificationRecord(
+            String id,
+            Long recipientId,
+            NotificationType type,
+            String title,
+            String message,
+            Long referenceId,
+            String referenceType) {
+        return new NotificationDTO(
+                id,
+                recipientId,
+                type,
+                title,
+                message,
+                referenceId,
+                referenceType,
+                false,
+                Instant.now().toString());
+    }
+
+    private void addNotification(
+            String email,
+            NotificationType type,
+            String title,
+            String message,
+            Long referenceId,
+            String referenceType) {
+        NotificationDTO notification = createNotificationRecord(
+                String.valueOf(nextNotificationId.getAndIncrement()),
+                null,
+                type,
+                title,
+                message,
+                referenceId,
+                referenceType);
+        storeNotification(recipientKey(email), notification);
+    }
+
+    private List<NotificationDTO> filterNotifications(String key, Boolean readFilter) {
+        ensureRecipient(key);
+        List<NotificationDTO> notifications = new ArrayList<>();
+        for (NotificationDTO notification : notificationsByRecipient.get(key).values()) {
+            if (readFilter == null || notification.isRead() == readFilter) {
+                notifications.add(notification);
+            }
+        }
+        return notifications;
+    }
+
+    private NotificationDTO markNotificationInternal(String key, String id, boolean read) {
+        ensureRecipient(key);
+        NotificationDTO existing = notificationsByRecipient.get(key).get(id);
+        if (existing == null) {
+            throw new ResourceNotFoundException("Notification not found with id: " + id);
+        }
+
+        NotificationDTO updated = new NotificationDTO(
+                existing.getId(),
+                existing.getRecipientId(),
+                existing.getType(),
+                existing.getTitle(),
+                existing.getMessage(),
+                existing.getReferenceId(),
+                existing.getReferenceType(),
+                read,
+                existing.getCreatedAt());
+        storeNotification(key, updated);
+        return updated;
+    }
+
+    private void deleteNotificationInternal(String key, String id) {
+        ensureRecipient(key);
+        NotificationDTO removed = notificationsByRecipient.get(key).remove(id);
+        if (removed == null) {
+            throw new ResourceNotFoundException("Notification not found with id: " + id);
+        }
+    }
+
+    private void markAllAsReadKey(String key) {
+        ensureRecipient(key);
+        List<NotificationDTO> existing = new ArrayList<>(notificationsByRecipient.get(key).values());
+        for (NotificationDTO notification : existing) {
+            notificationsByRecipient.get(key).put(
+                    notification.getId(),
+                    new NotificationDTO(
+                            notification.getId(),
+                            notification.getRecipientId(),
+                            notification.getType(),
+                            notification.getTitle(),
+                            notification.getMessage(),
+                            notification.getReferenceId(),
+                            notification.getReferenceType(),
+                            true,
+                            notification.getCreatedAt()));
+        }
+    }
+
+    private void clearAllNotificationsKey(String key) {
+        ensureRecipient(key);
+        notificationsByRecipient.get(key).clear();
+    }
+
+    private void storeNotification(String key, NotificationDTO notification) {
+        ensureRecipient(key);
+        notificationsByRecipient.get(key).put(notification.getId(), notification);
+    }
+
+    private void ensureRecipient(String key) {
+        notificationsByRecipient.computeIfAbsent(key, ignored -> new LinkedHashMap<>());
+    }
+
+    private String recipientKey(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String recipientKey(Long userId) {
+        return userId == null ? "" : "user:" + userId;
     }
 }

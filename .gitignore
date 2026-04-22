@@ -141,4 +141,6 @@ vite.config.ts.timestamp-*
 # Java (Spring Boot)
 target/
 *.class
-
+backend/smartcampus/out/
+backend/smartcampus/*.log
+backend/smartcampus/*.err.log

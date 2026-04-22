@@ -1,0 +1,93 @@
+name: Validate Postman Artifacts
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "postman/**"
+      - ".github/workflows/validate-postman-artifacts.yml"
+  pull_request:
+    paths:
+      - "postman/**"
+      - ".github/workflows/validate-postman-artifacts.yml"
+
+jobs:
+  validate-postman-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate required Postman files
+        shell: bash
+        run: |
+          required=(
+            "postman/README.md"
+            "postman/collections/00-health-and-smoke.collection.json"
+            "postman/collections/01-resources.collection.json"
+            "postman/collections/02-bookings.collection.json"
+            "postman/collections/03-tickets.collection.json"
+            "postman/collections/04-notifications-and-auth.collection.json"
+            "postman/environments/local.environment.json"
+            "postman/environments/demo.environment.json"
+          )
+
+          for file in "${required[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "Missing required artifact: $file"
+              exit 1
+            fi
+          done
+
+      - name: Validate Postman JSON structure
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected_collections = {
+              "00 Health and Smoke",
+              "01 Resources",
+              "02 Bookings",
+              "03 Tickets",
+              "04 Notifications and Auth",
+          }
+          expected_environments = {"Local", "Demo"}
+
+          collection_files = sorted(Path("postman/collections").glob("*.json"))
+          environment_files = sorted(Path("postman/environments").glob("*.json"))
+
+          if len(collection_files) != 5:
+              raise SystemExit(f"Expected 5 collection files, found {len(collection_files)}")
+          if len(environment_files) != 2:
+              raise SystemExit(f"Expected 2 environment files, found {len(environment_files)}")
+
+          collection_names = set()
+          environment_names = set()
+
+          for path in collection_files:
+              with path.open(encoding="utf-8") as handle:
+                  payload = json.load(handle)
+              collection_names.add(payload["info"]["name"])
+              print(f"Validated collection: {path}")
+
+          for path in environment_files:
+              with path.open(encoding="utf-8") as handle:
+                  payload = json.load(handle)
+              environment_names.add(payload["name"])
+              print(f"Validated environment: {path}")
+
+          if collection_names != expected_collections:
+              raise SystemExit(f"Unexpected collection names: {sorted(collection_names)}")
+          if environment_names != expected_environments:
+              raise SystemExit(f"Unexpected environment names: {sorted(environment_names)}")
+          PY
