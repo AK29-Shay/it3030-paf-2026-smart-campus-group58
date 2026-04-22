@@ -1,0 +1,3 @@
+backend/smartcampus/out/
+backend/smartcampus/*.log
+backend/smartcampus/*.err.log
