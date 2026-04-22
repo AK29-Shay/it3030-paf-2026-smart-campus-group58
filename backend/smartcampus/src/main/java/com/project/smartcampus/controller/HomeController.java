@@ -18,27 +18,12 @@ public class HomeController {
         this.notificationService = notificationService;
     }
 
-    public String home() {
-        return "Smart Campus Backend is running!";
-    }
-
     public boolean canHandle(String path) {
-        return "/".equals(path)
-                || "/actuator/health".equals(path)
-                || "/admin/dashboard/summary".equals(path);
+        return "/actuator/health".equals(path) || "/admin/dashboard/summary".equals(path);
     }
 
     public void handle(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
-        if ("/".equals(path)) {
-            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                HttpUtil.sendMethodNotAllowed(exchange);
-                return;
-            }
-            HttpUtil.sendJson(exchange, 200, JsonUtil.message(home()));
-            return;
-        }
-
         if ("/actuator/health".equals(path)) {
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                 HttpUtil.sendMethodNotAllowed(exchange);
@@ -55,8 +40,7 @@ public class HomeController {
             }
 
             try {
-                AuthService.AuthenticatedUser admin =
-                        authService.requireRole(exchange.getRequestHeaders().getFirst("Authorization"), Role.ADMIN);
+                AuthService.AuthenticatedUser admin = authService.requireRole(exchange.getRequestHeaders().getFirst("Authorization"), Role.ADMIN);
                 String payload = JsonUtil.adminSummary(
                         authService.totalUsers(),
                         notificationService.totalNotifications(admin.email()),
