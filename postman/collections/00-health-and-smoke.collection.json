@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b05f463f-faad-4d45-948f-63eb8f88f34a",
     "name": "00 Health and Smoke",
-    "description": "Shared smoke checks and bootstrap requests for the Smart Campus platform.\n\nUse this collection for quick sanity checks before running module-specific collections.",
+    "description": "Shared smoke checks and bootstrap requests for the Smart Campus platform.\n\nThe local auth demo now implements `GET /actuator/health`, `GET /users/me`, and `GET /admin/dashboard/summary`, so these requests can be used as real smoke checks instead of placeholders.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -11,6 +11,22 @@
       "item": [
         {
           "name": "GET Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health check returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Health check returns UP status', function () {",
+                  "  pm.expect(pm.response.json().status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "noauth"
@@ -22,12 +38,28 @@
                 "value": "application/json"
               }
             ],
-            "description": "Intended endpoint: `GET /actuator/health`\nExpected role: public\nExpected status: `200 OK`\nTODO: Bind this to the final Spring Boot health endpoint when the backend is ready.",
+            "description": "Implemented locally by the auth demo backend.\nExpected role: public\nExpected status: `200 OK` with `{ \"status\": \"UP\" }`.",
             "url": "{{baseUrl}}/actuator/health"
           }
         },
         {
           "name": "GET Authenticated Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile request returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Profile response contains the seeded user email', function () {",
+                  "  pm.expect(pm.response.json().email).to.eql(pm.environment.get('userEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -46,7 +78,7 @@
                 "value": "application/json"
               }
             ],
-            "description": "Intended endpoint: `GET /users/me`\nExpected role: authenticated user\nExpected status: `200 OK`\nTODO: Replace this placeholder path if the profile route uses a different URI.",
+            "description": "Implemented locally by the auth demo backend.\nExpected role: authenticated user\nExpected status: `200 OK` with the current user's name, email, and role.",
             "url": "{{baseUrl}}/users/me"
           }
         }
@@ -57,6 +89,19 @@
       "item": [
         {
           "name": "GET Missing Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing route returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "noauth"
@@ -68,7 +113,7 @@
                 "value": "application/json"
               }
             ],
-            "description": "Intended endpoint: `GET /__missing_route__`\nExpected role: public\nExpected status: `404 Not Found`\nTODO: Keep one negative smoke check in the suite to demonstrate error handling.",
+            "description": "Expected role: public\nExpected status: `404 Not Found`.\nUse this to prove consistent JSON error handling for unknown routes.",
             "url": "{{baseUrl}}/__missing_route__"
           }
         }
@@ -79,6 +124,22 @@
       "item": [
         {
           "name": "GET Admin Dashboard Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin summary returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Admin summary contains totalUsers', function () {",
+                  "  pm.expect(pm.response.json()).to.have.property('totalUsers');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -97,7 +158,7 @@
                 "value": "application/json"
               }
             ],
-            "description": "Intended endpoint: `GET /admin/dashboard/summary`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Replace this with the final admin-only smoke endpoint if the dashboard summary lives elsewhere.",
+            "description": "Implemented locally by the auth demo backend.\nExpected role: `ADMIN`\nExpected status: `200 OK` with a small admin summary payload.",
             "url": "{{baseUrl}}/admin/dashboard/summary"
           }
         }
@@ -130,7 +191,7 @@
               "mode": "raw",
               "raw": "{\n  \"profile\": \"group58-demo\"\n}"
             },
-            "description": "Intended endpoint: `POST /admin/seed`\nExpected role: `ADMIN`\nExpected status: `202 Accepted`\nTODO: Keep this disabled until a demo data bootstrap route actually exists.",
+            "description": "Still a placeholder.\nExpected role: `ADMIN`\nExpected status: `202 Accepted` only after a dedicated seeding endpoint exists.",
             "url": "{{baseUrl}}/admin/seed"
           }
         }

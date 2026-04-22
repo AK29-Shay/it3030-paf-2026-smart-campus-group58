@@ -73,6 +73,23 @@ Expected login response:
 - The backend should return a bearer token field such as `token` or `accessToken`
 - The Postman login requests are prepared to save either field automatically once the API exists
 
+## Local Auth Demo
+The repo now includes a lightweight local auth demo backend that issues real JWTs for Postman testing.
+
+Quick start:
+1. Run `.\scripts\start-auth-demo.ps1` from the repo root in PowerShell
+2. Confirm the health check responds at `http://localhost:8080/actuator/health`
+3. Use the seeded accounts already in the environments:
+   1. `student@example.com` / `ChangeMe123!`
+   2. `admin@example.com` / `ChangeMe123!`
+4. Run `POST Login User` and `POST Login Admin` in the auth collection to populate `{{accessToken}}` and `{{adminToken}}`
+
+Smoke endpoints implemented by the demo:
+- `GET /actuator/health`
+- `GET /users/me`
+- `GET /notifications?read=false`
+- `GET /admin/dashboard/summary`
+
 ## Working Agreement
 - Each member should mainly update the collection they own.
 - Keep the folder pattern consistent in every owner collection:
