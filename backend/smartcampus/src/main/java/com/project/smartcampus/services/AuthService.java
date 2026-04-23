@@ -40,7 +40,7 @@ public class AuthService {
 
     public AuthenticatedUser requireAuthenticated(String authorizationHeader) {
         String token = extractBearerToken(authorizationHeader);
-        JwtUtil.TokenClaims claims = jwtUtil.parseToken(token);
+        JwtUtil.TokenClaims claims = jwtUtil.validateToken(token);
         UserAccount user = users.get(normalizeEmail(claims.email()));
         if (user == null) {
             throw new SecurityException("User not found for token subject.");

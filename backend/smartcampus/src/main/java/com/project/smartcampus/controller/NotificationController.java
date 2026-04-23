@@ -20,37 +20,13 @@ public class NotificationController {
     }
 
     public boolean canHandle(String path) {
-        return "/notifications".equals(path)
-                || path.startsWith("/notifications/")
-                || "/api/notifications".equals(path)
-                || path.startsWith("/api/notifications/");
+        return "/notifications".equals(path) || path.startsWith("/notifications/");
     }
 
     public void handle(HttpExchange exchange) throws IOException {
-        String path = normalizePath(exchange.getRequestURI().getPath());
+        String path = exchange.getRequestURI().getPath();
         if ("/notifications".equals(path)) {
-            handleList(exchange, null);
-            return;
-        }
-        if ("/notifications/unread".equals(path)) {
-            handleList(exchange, false);
-            return;
-        }
-        if ("/notifications/unread/count".equals(path)) {
-            handleUnreadCount(exchange);
-            return;
-        }
-        if ("/notifications/read-all".equals(path)) {
-            handleReadAll(exchange);
-            return;
-        }
-        if ("/notifications/clear".equals(path)) {
-            handleClear(exchange);
-            return;
-        }
-        if (path.startsWith("/notifications/") && path.endsWith("/read")) {
-            String notificationId = path.substring("/notifications/".length(), path.length() - "/read".length());
-            handleMarkRead(exchange, notificationId);
+            handleList(exchange);
             return;
         }
         if (path.startsWith("/notifications/")) {
@@ -60,19 +36,16 @@ public class NotificationController {
         HttpUtil.sendJson(exchange, 404, JsonUtil.message("Route not found."));
     }
 
-    private void handleList(HttpExchange exchange, Boolean readFilter) throws IOException {
+    private void handleList(HttpExchange exchange) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             HttpUtil.sendMethodNotAllowed(exchange);
             return;
         }
 
         try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            if (readFilter == null) {
-                String readParam = queryParam(exchange, "read");
-                readFilter = readParam == null ? null : Boolean.parseBoolean(readParam);
-            }
+            AuthService.AuthenticatedUser user = authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
+            String readParam = queryParam(exchange, "read");
+            Boolean readFilter = readParam == null ? null : Boolean.parseBoolean(readParam);
             List<NotificationDTO> notifications = notificationService.listNotifications(user.email(), readFilter);
             HttpUtil.sendJson(exchange, 200, JsonUtil.notifications(notifications));
         } catch (SecurityException exception) {
@@ -80,76 +53,9 @@ public class NotificationController {
         }
     }
 
-    private void handleUnreadCount(HttpExchange exchange) throws IOException {
-        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            int unread = notificationService.unreadNotifications(user.email());
-            HttpUtil.sendJson(exchange, 200, "{\"count\":" + unread + "}");
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
-    }
-
-    private void handleReadAll(HttpExchange exchange) throws IOException {
-        if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            notificationService.markAllAsRead(user.email());
-            HttpUtil.sendJson(exchange, 200, JsonUtil.message("All notifications marked as read."));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
-    }
-
-    private void handleClear(HttpExchange exchange) throws IOException {
-        if (!"DELETE".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            notificationService.clearAllNotifications(user.email());
-            HttpUtil.sendJson(exchange, 200, JsonUtil.message("All notifications cleared."));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
-    }
-
-    private void handleMarkRead(HttpExchange exchange, String notificationId) throws IOException {
-        if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            NotificationDTO updated = notificationService.markNotification(user.email(), notificationId, true);
-            HttpUtil.sendJson(exchange, 200, JsonUtil.notification(updated));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        } catch (RuntimeException exception) {
-            HttpUtil.sendJson(exchange, 404, JsonUtil.message(exception.getMessage()));
-        }
-    }
-
     private void handleItem(HttpExchange exchange, String notificationId) throws IOException {
         try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
+            AuthService.AuthenticatedUser user = authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
             if ("PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
                 String body = HttpUtil.readBody(exchange);
                 Boolean read = JsonUtil.extractBoolean(body, "read");
@@ -169,10 +75,10 @@ public class NotificationController {
             }
 
             HttpUtil.sendMethodNotAllowed(exchange);
+        } catch (IllegalArgumentException exception) {
+            HttpUtil.sendJson(exchange, 404, JsonUtil.message(exception.getMessage()));
         } catch (SecurityException exception) {
             HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        } catch (RuntimeException exception) {
-            HttpUtil.sendJson(exchange, 404, JsonUtil.message(exception.getMessage()));
         }
     }
 
@@ -189,12 +95,5 @@ public class NotificationController {
             }
         }
         return null;
-    }
-
-    private String normalizePath(String path) {
-        if (path.startsWith("/api/notifications")) {
-            return path.substring("/api".length());
-        }
-        return path;
     }
 }

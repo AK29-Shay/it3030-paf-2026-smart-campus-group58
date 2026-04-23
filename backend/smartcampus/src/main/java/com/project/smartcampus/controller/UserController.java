@@ -16,14 +16,11 @@ public class UserController {
     }
 
     public boolean canHandle(String path) {
-        return "/users/me".equals(path)
-                || "/users/roles".equals(path)
-                || "/api/users/me".equals(path)
-                || "/api/users/roles".equals(path);
+        return "/users/me".equals(path) || "/users/roles".equals(path);
     }
 
     public void handle(HttpExchange exchange) throws IOException {
-        String path = normalizePath(exchange.getRequestURI().getPath());
+        String path = exchange.getRequestURI().getPath();
         if ("/users/me".equals(path)) {
             handleCurrentUser(exchange);
             return;
@@ -42,8 +39,7 @@ public class UserController {
         }
 
         try {
-            AuthService.AuthenticatedUser user =
-                    authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
+            AuthService.AuthenticatedUser user = authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
             HttpUtil.sendJson(exchange, 200, JsonUtil.userResponse(user));
         } catch (SecurityException exception) {
             HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
@@ -66,8 +62,7 @@ public class UserController {
 
         try {
             Role role = Role.valueOf(roleValue.trim().toUpperCase());
-            AuthService.AuthenticatedUser updated =
-                    authService.updateRole(exchange.getRequestHeaders().getFirst("Authorization"), email, role);
+            AuthService.AuthenticatedUser updated = authService.updateRole(exchange.getRequestHeaders().getFirst("Authorization"), email, role);
             HttpUtil.sendJson(exchange, 200, JsonUtil.userResponse(updated));
         } catch (IllegalArgumentException exception) {
             HttpUtil.sendJson(exchange, 400, JsonUtil.message(exception.getMessage()));
@@ -76,12 +71,5 @@ public class UserController {
         } catch (SecurityException exception) {
             HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
         }
-    }
-
-    private String normalizePath(String path) {
-        if (path.startsWith("/api/users")) {
-            return path.substring("/api".length());
-        }
-        return path;
     }
 }
