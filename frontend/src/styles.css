@@ -1,0 +1,92 @@
+:root {
+  color: #17202a;
+  background: #f6f8fb;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  border: 0;
+  border-radius: 6px;
+  background: #1f7a5a;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.75rem 1rem;
+}
+
+.topbar {
+  align-items: center;
+  background: white;
+  border-bottom: 1px solid #dce3ea;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+}
+
+.brand {
+  font-weight: 700;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.page-wrap {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 2rem;
+}
+
+.page-heading p,
+.status-label {
+  color: #5f6f7f;
+  margin: 0 0 0.25rem;
+}
+
+.page-heading h1,
+.auth-panel h1 {
+  margin: 0 0 1.5rem;
+}
+
+.status-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.status-card,
+.auth-panel {
+  background: white;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.status-card strong {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-card span,
+.auth-panel p {
+  color: #5f6f7f;
+}
+
+.auth-panel {
+  max-width: 420px;
+}
