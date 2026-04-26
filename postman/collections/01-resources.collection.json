@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "d8c0e597-d1c7-4699-b02a-1332d6e84603",
+    "_postman_id": "11111111-1111-4000-8000-111111111111",
     "name": "01 Resources",
-    "description": "Module owner: You\n\nScope: Facilities and assets catalogue.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.",
+    "description": "Facilities and assets catalogue CRUD and validation checks.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,170 +17,271 @@
   },
   "item": [
     {
-      "name": "01 Happy Path",
-      "item": [
-        {
-          "name": "GET List Resources",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /resources`\nExpected role: `USER` or `ADMIN`\nExpected status: `200 OK`\nTODO: Adjust filters once the backend query shape is finalized.",
-            "url": "{{baseUrl}}/resources?type=LECTURE_HALL&capacity=50&location=Main%20Block"
+      "name": "GET List Resources",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
           }
-        },
+        ],
+        "url": "{{baseUrl}}/api/resources",
+        "description": "Public catalogue listing.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
         {
-          "name": "POST Create Resource",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Lecture Hall A\",\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": 120,\n  \"location\": \"Main Building - Level 2\",\n  \"availabilityWindow\": \"MON-FRI 08:00-18:00\",\n  \"status\": \"ACTIVE\"\n}"
-            },
-            "description": "Intended endpoint: `POST /resources`\nExpected role: `ADMIN`\nExpected status: `201 Created`\nTODO: Replace the placeholder payload with the final DTO fields from the backend.",
-            "url": "{{baseUrl}}/resources"
-          }
-        },
-        {
-          "name": "PATCH Update Resource Status",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"OUT_OF_SERVICE\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /resources/{{resourceId}}/status`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Update the path if the team chooses a different status-update route.",
-            "url": "{{baseUrl}}/resources/{{resourceId}}/status"
-          }
-        },
-        {
-          "name": "DELETE Delete Resource",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "description": "Intended endpoint: `DELETE /resources/{{resourceId}}`\nExpected role: `ADMIN`\nExpected status: `204 No Content`\nTODO: Keep this only if the final design allows deletion instead of pure status-based retirement.",
-            "url": "{{baseUrl}}/resources/{{resourceId}}"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.be.an('array');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "02 Validation and Errors",
-      "item": [
+      "name": "POST Create Demo Resource",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/resources",
+        "description": "Admin creates a bookable resource and stores resourceId/resourceName.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Demo Room {{$timestamp}}\",\n  \"type\": \"FACILITY\",\n  \"category\": \"MEETING_ROOM\",\n  \"capacity\": 20,\n  \"location\": \"Postman Test Block\",\n  \"availabilityStart\": \"08:00:00\",\n  \"availabilityEnd\": \"18:00:00\",\n  \"description\": \"Resource created by the Postman verification pack.\",\n  \"status\": \"ACTIVE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
         {
-          "name": "POST Create Resource",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": -1,\n  \"location\": \"\",\n  \"status\": \"ACTIVE\"\n}"
-            },
-            "description": "Intended endpoint: `POST /resources`\nExpected role: `ADMIN`\nExpected status: `400 Bad Request`\nTODO: Convert this to the real validation-failure payload once bean validation rules exist.",
-            "url": "{{baseUrl}}/resources"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const data = pm.response.json();",
+              "pm.environment.set('resourceId', data.id);",
+              "pm.environment.set('resourceName', data.name);",
+              "pm.expect(data.status).to.eql('ACTIVE');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "03 Role and Access",
-      "item": [
+      "name": "GET Resource By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/resources/{{resourceId}}",
+        "description": "Fetches the created resource.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
         {
-          "name": "PATCH Update Resource Status",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"OUT_OF_SERVICE\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /resources/{{resourceId}}/status`\nExpected role: `ADMIN`\nExpected status: `403 Forbidden` when run with `{{accessToken}}`\nTODO: Keep this request wired to a normal user token to prove role-based access control.",
-            "url": "{{baseUrl}}/resources/{{resourceId}}/status"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().id).to.eql(Number(pm.environment.get('resourceId')));"
+            ]
           }
         }
       ]
     },
     {
-      "name": "99 Draft or Placeholder",
-      "item": [
+      "name": "PUT Update Demo Resource",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/resources/{{resourceId}}",
+        "description": "Admin updates resource metadata.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{resourceName}}\",\n  \"type\": \"FACILITY\",\n  \"category\": \"MEETING_ROOM\",\n  \"capacity\": 24,\n  \"location\": \"Postman Test Block\",\n  \"availabilityStart\": \"08:30:00\",\n  \"availabilityEnd\": \"18:30:00\",\n  \"description\": \"Updated by Postman to verify PUT.\",\n  \"status\": \"ACTIVE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
         {
-          "name": "GET List Resources",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /resources/availability`\nExpected role: `USER` or `ADMIN`\nExpected status: `200 OK`\nTODO: Use this draft request if the team exposes separate availability windows outside the main catalogue query.",
-            "url": "{{baseUrl}}/resources/availability?date=2026-04-28"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().capacity).to.eql(24);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST Create Invalid Resource",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/resources",
+        "description": "Validation evidence.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"\",\n  \"type\": \"FACILITY\",\n  \"category\": \"MEETING_ROOM\",\n  \"capacity\": -1,\n  \"location\": \"\",\n  \"status\": \"ACTIVE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('validation returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST Create Cleanup Resource",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/resources",
+        "description": "Creates a throwaway resource for DELETE verification.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Cleanup Resource {{$timestamp}}\",\n  \"type\": \"EQUIPMENT\",\n  \"category\": \"PROJECTOR\",\n  \"capacity\": 1,\n  \"location\": \"IT Help Desk\",\n  \"availabilityStart\": \"09:00:00\",\n  \"availabilityEnd\": \"17:00:00\",\n  \"description\": \"Temporary resource used only for DELETE verification.\",\n  \"status\": \"ACTIVE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "pm.environment.set('cleanupResourceId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE Cleanup Resource",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/resources/{{cleanupResourceId}}",
+        "description": "Admin delete proof without removing the booking demo resource.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 204', () => pm.response.to.have.status(204));"
+            ]
           }
         }
       ]

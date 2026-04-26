@@ -16,6 +16,10 @@ public class SeedProperties {
     private String adminEmail = "admin@smartcampus.local";
     private String adminPassword = "AdminPassword123!";
 
+    private String userName = "Group 58 Student";
+    private String userEmail = "student@example.com";
+    private String userPassword = "ChangeMe123!";
+
     private String technicianName = "Support Technician";
     private String technicianEmail = "technician@smartcampus.local";
     private String technicianPassword = "TechnicianPassword123!";
@@ -54,6 +58,30 @@ public class SeedProperties {
 
     public String getTechnicianName() {
         return technicianName;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserPassword() {
+        return userPassword;
+    }
+
+    public void setUserPassword(String userPassword) {
+        this.userPassword = userPassword;
     }
 
     public void setTechnicianName(String technicianName) {

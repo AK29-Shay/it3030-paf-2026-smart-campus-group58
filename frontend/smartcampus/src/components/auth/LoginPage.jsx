@@ -32,7 +32,7 @@ function LoginPage() {
 
       const fallback =
         err.code === 'ERR_NETWORK'
-          ? 'Cannot connect to the server. Please ensure the backend is running on http://localhost:8086.'
+          ? 'Cannot connect to the server. Please ensure the backend is running on http://localhost:8080.'
           : err.response?.status === 401
             ? 'Sign in failed. Check your email, password, and selected role.'
             : 'Unable to sign in. Check your credentials and try again.';

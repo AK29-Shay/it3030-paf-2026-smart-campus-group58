@@ -1,5 +1,6 @@
 package com.project.smartcampus.services;
 
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.enums.Role;
 import com.project.smartcampus.entity.User;
 import com.project.smartcampus.repository.UserRepository;
@@ -51,12 +52,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (existingUser.isEmpty()) {
             log.info("Registering new OAuth2 user: {}", email);
             user = User.builder()
+                    .id(MongoIdGenerator.nextId())
                     .email(email)
                     .name(name)
                     .profilePicture(picture)
                     .role(Role.USER)
                     .provider(provider)
                     .providerId(providerId)
+                    .createdAt(java.time.LocalDateTime.now())
+                    .updatedAt(java.time.LocalDateTime.now())
                     .build();
             user = userRepository.save(user);
         } else {

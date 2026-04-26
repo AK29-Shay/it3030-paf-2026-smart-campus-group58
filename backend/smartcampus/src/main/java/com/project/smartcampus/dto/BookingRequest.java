@@ -14,7 +14,6 @@ public class BookingRequest {
     @NotBlank(message = "Purpose is required")
     private String purpose;
 
-    @NotBlank(message = "Booked by is required")
     private String bookedBy;
 
     @Positive(message = "Attendees must be greater than 0")

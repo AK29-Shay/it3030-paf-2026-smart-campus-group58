@@ -1,5 +1,6 @@
 package com.project.smartcampus.services;
 
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.dto.AssignTechnicianRequest;
 import com.project.smartcampus.dto.CreateTicketRequest;
 import com.project.smartcampus.dto.TicketAssignmentHistoryResponse;
@@ -49,21 +50,25 @@ public class TicketService {
     private final TicketCommentRepository ticketCommentRepository;
     private final TicketAssignmentHistoryRepository ticketAssignmentHistoryRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public TicketService(TicketRepository ticketRepository,
                          TicketCommentRepository ticketCommentRepository,
                          TicketAssignmentHistoryRepository ticketAssignmentHistoryRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         NotificationService notificationService) {
         this.ticketRepository = ticketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
         this.ticketAssignmentHistoryRepository = ticketAssignmentHistoryRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public TicketResponse createTicket(CreateTicketRequest request, List<MultipartFile> images) {
         List<String> imagePaths = saveImages(images);
 
         Ticket ticket = new Ticket();
+        ticket.setId(MongoIdGenerator.nextId());
         ticket.setTitle(request.getTitle());
         ticket.setDescription(request.getDescription());
         ticket.setImagePaths(imagePaths);
@@ -71,6 +76,8 @@ public class TicketService {
         ticket.setPriority(request.getPriority());
         ticket.setCreatedBy(request.getCreatedBy());
         ticket.setStatus(TicketStatus.OPEN);
+        ticket.setCreatedAt(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
         Map<Long, User> usersById = getUsersByIds(savedTicket.getCreatedBy(), savedTicket.getAssignedTo());
@@ -140,12 +147,19 @@ public class TicketService {
         Ticket updatedTicket = ticketRepository.save(ticket);
 
         TicketAssignmentHistory history = new TicketAssignmentHistory();
+        history.setId(MongoIdGenerator.nextId());
         history.setTicketId(ticketId);
         history.setAssignedBy(assignedBy);
         history.setFromTechnicianId(previousTechnicianId);
         history.setToTechnicianId(request.getAssignedTo());
         history.setReason(reason);
+        history.setAssignedAt(LocalDateTime.now());
         ticketAssignmentHistoryRepository.save(history);
+        notificationService.notifyTicketAssigned(
+                request.getAssignedTo(),
+                ticketId,
+                updatedTicket.getTitle()
+        );
 
         Map<Long, User> usersById = getUsersByIds(updatedTicket.getCreatedBy(), updatedTicket.getAssignedTo(), request.getAssignedTo());
         List<TicketComment> comments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAscIdAsc(updatedTicket.getId());
@@ -194,6 +208,13 @@ public class TicketService {
         }
 
         Ticket updatedTicket = ticketRepository.save(ticket);
+        if (updatedTicket.getCreatedBy() != null) {
+            notificationService.notifyTicketStatusChanged(
+                    updatedTicket.getCreatedBy(),
+                    updatedTicket.getId(),
+                    updatedTicket.getStatus().name()
+            );
+        }
         Map<Long, User> usersById = getUsersByIds(updatedTicket.getCreatedBy(), updatedTicket.getAssignedTo());
         List<TicketComment> comments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAscIdAsc(updatedTicket.getId());
         return mapToResponse(updatedTicket, usersById, comments);
@@ -294,8 +315,8 @@ public class TicketService {
             .collect(Collectors.toMap(User::getId, user -> user));
 
         Map<Long, List<TicketComment>> commentsByTicketId = comments.stream()
-                .filter(comment -> comment.getTicket() != null && comment.getTicket().getId() != null)
-                .collect(Collectors.groupingBy(comment -> comment.getTicket().getId()));
+            .filter(comment -> comment.getTicketId() != null)
+            .collect(Collectors.groupingBy(TicketComment::getTicketId));
 
         return tickets.stream()
             .map(ticket -> mapToResponse(ticket, usersById,
@@ -346,14 +367,19 @@ public class TicketService {
         Long userId = extractAuthenticatedUserId(authentication);
 
         TicketComment ticketComment = new TicketComment();
+        ticketComment.setId(MongoIdGenerator.nextId());
         ticketComment.setComment(request.getComment().trim());
         ticketComment.setCommentedBy(userId);
-        ticketComment.setTicket(ticket);
+        ticketComment.setTicketId(ticketId);
+        ticketComment.setCreatedAt(LocalDateTime.now());
+        ticketComment.setUpdatedAt(LocalDateTime.now());
 
         TicketComment savedComment = ticketCommentRepository.save(ticketComment);
         Map<Long, User> usersById = userRepository.findAllById(List.of(userId))
                 .stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
+
+        notifyTicketOwnerAboutComment(ticket, userId, usersById.get(userId));
 
         return mapCommentToResponse(savedComment, usersById);
     }
@@ -373,20 +399,25 @@ public class TicketService {
         TicketComment parentComment = ticketCommentRepository.findById(parentCommentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + parentCommentId));
 
-        if (!Objects.equals(parentComment.getTicket().getId(), ticketId)) {
+        if (!Objects.equals(parentComment.getTicketId(), ticketId)) {
             throw new IllegalArgumentException("Parent comment does not belong to this ticket.");
         }
 
         TicketComment reply = new TicketComment();
+        reply.setId(MongoIdGenerator.nextId());
         reply.setComment(request.getComment().trim());
         reply.setCommentedBy(userId);
-        reply.setTicket(ticket);
-        reply.setParentComment(parentComment);
+        reply.setTicketId(ticketId);
+        reply.setParentCommentId(parentCommentId);
+        reply.setCreatedAt(LocalDateTime.now());
+        reply.setUpdatedAt(LocalDateTime.now());
 
         TicketComment savedReply = ticketCommentRepository.save(reply);
         Map<Long, User> usersById = userRepository.findAllById(List.of(userId))
                 .stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
+
+        notifyTicketOwnerAboutComment(ticket, userId, usersById.get(userId));
 
         return mapCommentToResponse(savedReply, usersById);
     }
@@ -400,7 +431,7 @@ public class TicketService {
         TicketComment comment = ticketCommentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
 
-        if (!Objects.equals(comment.getTicket().getId(), ticketId)) {
+        if (!Objects.equals(comment.getTicketId(), ticketId)) {
             throw new IllegalArgumentException("Comment does not belong to this ticket.");
         }
 
@@ -414,8 +445,10 @@ public class TicketService {
 
         List<Long> ids = new ArrayList<>();
         ids.add(updatedComment.getCommentedBy());
-        if (updatedComment.getParentComment() != null) {
-            ids.add(updatedComment.getParentComment().getCommentedBy());
+        if (updatedComment.getParentCommentId() != null) {
+            ticketCommentRepository.findById(updatedComment.getParentCommentId())
+                    .map(TicketComment::getCommentedBy)
+                    .ifPresent(ids::add);
         }
 
         Map<Long, User> usersById = userRepository.findAllById(ids)
@@ -431,7 +464,7 @@ public class TicketService {
         TicketComment comment = ticketCommentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
 
-        if (!Objects.equals(comment.getTicket().getId(), ticketId)) {
+        if (!Objects.equals(comment.getTicketId(), ticketId)) {
             throw new IllegalArgumentException("Comment does not belong to this ticket.");
         }
 
@@ -442,8 +475,8 @@ public class TicketService {
 
         List<TicketComment> allTicketComments = ticketCommentRepository.findByTicketIdOrderByCreatedAtAscIdAsc(ticketId);
         List<TicketComment> childReplies = allTicketComments.stream()
-                .filter(item -> item.getParentComment() != null)
-                .filter(item -> Objects.equals(item.getParentComment().getId(), commentId))
+            .filter(item -> item.getParentCommentId() != null)
+            .filter(item -> Objects.equals(item.getParentCommentId(), commentId))
                 .collect(Collectors.toList());
 
         if (!childReplies.isEmpty()) {
@@ -485,9 +518,7 @@ public class TicketService {
             response.setCommentedByRole("USER");
         }
 
-        response.setParentCommentId(
-                comment.getParentComment() != null ? comment.getParentComment().getId() : null
-        );
+        response.setParentCommentId(comment.getParentCommentId());
         response.setCreatedAt(comment.getCreatedAt());
         response.setUpdatedAt(comment.getUpdatedAt());
 
@@ -572,6 +603,20 @@ public class TicketService {
 
         return authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
+    private void notifyTicketOwnerAboutComment(Ticket ticket, Long commenterId, User commenter) {
+        if (ticket.getCreatedBy() == null || Objects.equals(ticket.getCreatedBy(), commenterId)) {
+            return;
+        }
+
+        String commenterName = Optional.ofNullable(commenter)
+                .map(User::getName)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .orElse("A team member");
+
+        notificationService.notifyNewComment(ticket.getCreatedBy(), ticket.getId(), commenterName);
     }
 
     private List<String> saveImages(List<MultipartFile> images) {

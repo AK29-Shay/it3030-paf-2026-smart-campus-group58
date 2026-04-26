@@ -1,14 +1,13 @@
 package com.project.smartcampus.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "ticket_comments")
+@Document(collection = "ticket_comments")
 public class TicketComment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String comment;
@@ -19,31 +18,19 @@ public class TicketComment {
 
     private LocalDateTime updatedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "ticket_id")
-    private Ticket ticket;
+    private Long ticketId;
 
-    @ManyToOne
-    @JoinColumn(name = "parent_comment_id")
-    private TicketComment parentComment;
+    private Long parentCommentId;
 
     public TicketComment() {
     }
 
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getComment() {
@@ -66,23 +53,31 @@ public class TicketComment {
         return createdAt;
     }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public Ticket getTicket() {
-        return ticket;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
-    public void setTicket(Ticket ticket) {
-        this.ticket = ticket;
+    public Long getTicketId() {
+        return ticketId;
     }
 
-    public TicketComment getParentComment() {
-        return parentComment;
+    public void setTicketId(Long ticketId) {
+        this.ticketId = ticketId;
     }
 
-    public void setParentComment(TicketComment parentComment) {
-        this.parentComment = parentComment;
+    public Long getParentCommentId() {
+        return parentCommentId;
+    }
+
+    public void setParentCommentId(Long parentCommentId) {
+        this.parentCommentId = parentCommentId;
     }
 }

@@ -1,6 +1,7 @@
 //backend\smartcampus\src\main\java\com\project\smartcampus\services\BookingService.java
 package com.project.smartcampus.services;
 
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.dto.BookingRequest;
 import com.project.smartcampus.dto.BookingResponse;
 import com.project.smartcampus.entity.Booking;
@@ -10,6 +11,7 @@ import com.project.smartcampus.enums.ResourceStatus;
 import com.project.smartcampus.exception.BookingConflictException;
 import com.project.smartcampus.repository.BookingRepository;
 import com.project.smartcampus.repository.ResourceRepository;
+import com.project.smartcampus.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,12 +31,19 @@ public class BookingService {
 
         private final BookingRepository repository;
         private final ResourceRepository resourceRepository;
+        private final NotificationService notificationService;
+        private final UserRepository userRepository;
         private static final EnumSet<BookingStatus> ACTIVE_CONFLICT_STATUSES = EnumSet.of(BookingStatus.PENDING,
                         BookingStatus.APPROVED);
 
-        public BookingService(BookingRepository repository, ResourceRepository resourceRepository) {
+        public BookingService(BookingRepository repository,
+                        ResourceRepository resourceRepository,
+                        NotificationService notificationService,
+                        UserRepository userRepository) {
                 this.repository = repository;
                 this.resourceRepository = resourceRepository;
+                this.notificationService = notificationService;
+                this.userRepository = userRepository;
         }
 
         public BookingResponse createBooking(BookingRequest request) {
@@ -66,7 +75,9 @@ public class BookingService {
 
                 booking.setStatus(BookingStatus.PENDING);
 
-                return mapToResponse(repository.save(booking));
+                Booking saved = repository.save(booking);
+                notifyBookingApproved(saved);
+                return mapToResponse(saved);
         }
 
         public List<BookingResponse> getAllBookings() {
@@ -228,7 +239,9 @@ public class BookingService {
                 // Save QR path
                 booking.setQrCode(qrPath);
 
-                return mapToResponse(repository.save(booking));
+                Booking saved = repository.save(booking);
+                notifyBookingRejected(saved);
+                return mapToResponse(saved);
         }
 
         public BookingResponse rejectBooking(Long id, String reason) {
@@ -388,6 +401,7 @@ public class BookingService {
 
         private Booking mapToEntity(BookingRequest request) {
                 Booking booking = new Booking();
+                booking.setId(MongoIdGenerator.nextId());
                 booking.setResourceName(request.getResourceName());
                 booking.setPurpose(request.getPurpose());
                 booking.setBookedBy(request.getBookedBy());
@@ -411,6 +425,29 @@ public class BookingService {
                 response.setQrCode(booking.getQrCode());
                 response.setCheckedInTime(booking.getCheckedInTime());
                 return response;
+        }
+
+        private void notifyBookingApproved(Booking booking) {
+                if (booking.getBookedBy() == null || booking.getBookedBy().isBlank()) {
+                        return;
+                }
+                userRepository.findByEmail(booking.getBookedBy())
+                                .ifPresent(user -> notificationService.notifyBookingApproved(
+                                                user.getId(),
+                                                booking.getId(),
+                                                booking.getResourceName()));
+        }
+
+        private void notifyBookingRejected(Booking booking) {
+                if (booking.getBookedBy() == null || booking.getBookedBy().isBlank()) {
+                        return;
+                }
+                userRepository.findByEmail(booking.getBookedBy())
+                                .ifPresent(user -> notificationService.notifyBookingRejected(
+                                                user.getId(),
+                                                booking.getId(),
+                                                booking.getResourceName(),
+                                                booking.getRejectionReason()));
         }
 
 }

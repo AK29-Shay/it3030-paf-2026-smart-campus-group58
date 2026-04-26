@@ -20,11 +20,11 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${app.jwt.secret}")
+    @Value("${auth.jwt.secret:${app.jwt.secret}}")
     private String jwtSecret;
 
-    @Value("${app.jwt.expiration}")
-    private long jwtExpiration;
+    @Value("${auth.jwt.expiration-seconds:${app.jwt.expiration:86400}}")
+    private long jwtExpirationSeconds;
 
     /**
      * Generates a JWT token for the given user.
@@ -41,7 +41,7 @@ public class JwtUtil {
                 .claim("role", user.getRole().name())
                 .claim("name", user.getName())
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+            .setExpiration(new Date(System.currentTimeMillis() + (jwtExpirationSeconds * 1000L)))
             .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

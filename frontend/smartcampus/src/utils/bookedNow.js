@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 // Returns a promise that resolves to a Set of resource IDs/names that are currently booked
 export async function getCurrentlyBookedResources() {
   try {
-    const res = await API.get("/bookings");
+    const res = await API.get("/bookings/my-bookings");
     const bookings = Array.isArray(res.data) ? res.data : [];
     const now = dayjs();
     const bookedSet = new Set();

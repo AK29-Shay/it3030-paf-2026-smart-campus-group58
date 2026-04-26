@@ -3,38 +3,30 @@ package com.project.smartcampus.entity;
 import com.project.smartcampus.enums.ResourceCategory;
 import com.project.smartcampus.enums.ResourceStatus;
 import com.project.smartcampus.enums.ResourceType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 import jakarta.validation.constraints.NotNull;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "resources")
+@Document(collection = "resources")
 @Data
 public class Resource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "Name cannot be empty")
     private String name;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     private ResourceType type;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     private ResourceCategory category;
 
     @Min(value = 0, message = "Capacity must be 0 or more")
@@ -50,6 +42,5 @@ public class Resource {
     private String description;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     private ResourceStatus status;
 }

@@ -1,5 +1,6 @@
 package com.project.smartcampus.mapper;
 
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.dto.ResourceDTO;
 import com.project.smartcampus.entity.Resource;
 
@@ -22,7 +23,7 @@ public class ResourceMapper {
 
     public static Resource toEntity(ResourceDTO dto) {
         Resource r = new Resource();
-        r.setId(dto.getId());
+        r.setId(dto.getId() != null ? dto.getId() : MongoIdGenerator.nextId());
         r.setName(dto.getName());
         r.setType(dto.getType());
         r.setCategory(dto.getCategory());

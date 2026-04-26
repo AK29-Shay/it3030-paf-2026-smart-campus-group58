@@ -51,7 +51,7 @@ class NotificationServiceTest {
 
         testNotification = Notification.builder()
                 .id(10L)
-                .recipient(testUser)
+            .recipientId(testUser.getId())
                 .type(NotificationType.BOOKING_APPROVED)
                 .title("Booking Approved")
                 .message("Your booking has been approved.")
@@ -166,7 +166,7 @@ class NotificationServiceTest {
     @Test
     void notifyBookingRejected_shouldIncludeReason() {
         Notification rejected = Notification.builder()
-                .id(11L).recipient(testUser)
+            .id(11L).recipientId(testUser.getId())
                 .type(NotificationType.BOOKING_REJECTED)
                 .title("Booking Rejected").message("Rejected: already booked")
                 .isRead(false).createdAt(LocalDateTime.now()).build();

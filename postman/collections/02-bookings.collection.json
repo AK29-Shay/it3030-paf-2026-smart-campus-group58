@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "0e5e234a-ece2-4af1-bf54-0b76569bf49c",
+    "_postman_id": "22222222-2222-4000-8000-222222222222",
     "name": "02 Bookings",
-    "description": "Module owner: snehadhaya55@gmail.com\n\nScope: Booking creation, approval workflow, rejection handling, and cancellation.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.",
+    "description": "Booking request workflow, conflict handling, approval/rejection, QR, and check-in.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -15,152 +15,322 @@
       }
     ]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const base = new Date(Date.now() + 36 * 60 * 60 * 1000);",
+          "base.setMinutes(0, 0, 0);",
+          "const end = new Date(base.getTime() + 2 * 60 * 60 * 1000);",
+          "const rejectStart = new Date(base.getTime() + 3 * 60 * 60 * 1000);",
+          "const rejectEnd = new Date(base.getTime() + 4 * 60 * 60 * 1000);",
+          "const fmt = d => d.toISOString().slice(0, 19);",
+          "pm.environment.set('bookingStartTime', fmt(base));",
+          "pm.environment.set('bookingEndTime', fmt(end));",
+          "pm.environment.set('rejectBookingStartTime', fmt(rejectStart));",
+          "pm.environment.set('rejectBookingEndTime', fmt(rejectEnd));"
+        ]
+      }
+    }
+  ],
   "item": [
     {
-      "name": "01 Happy Path",
-      "item": [
-        {
-          "name": "POST Create Booking",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"bookingDate\": \"2026-04-28\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"purpose\": \"PAF group client demo rehearsal\",\n  \"expectedAttendees\": 6\n}"
-            },
-            "description": "Intended endpoint: `POST /bookings`\nExpected role: authenticated user\nExpected status: `201 Created`\nTODO: Replace the date and attendee fields if the final DTO differs.",
-            "url": "{{baseUrl}}/bookings"
+      "name": "POST Create Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        },
-        {
-          "name": "GET List Bookings",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /bookings?mine=true`\nExpected role: authenticated user\nExpected status: `200 OK`\nTODO: Switch to the final route used for the current user's booking list.",
-            "url": "{{baseUrl}}/bookings?mine=true"
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Creates a pending booking for the authenticated user.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceName\": \"{{resourceName}}\",\n  \"purpose\": \"PAF viva rehearsal\",\n  \"attendees\": 6,\n  \"startTime\": \"{{bookingStartTime}}\",\n  \"endTime\": \"{{bookingEndTime}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
           }
-        },
+        }
+      },
+      "event": [
         {
-          "name": "PATCH Approve Booking",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"APPROVED\",\n  \"reason\": \"Approved for the rehearsal slot\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /bookings/{{bookingId}}/approval`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Use the final approval or rejection route chosen by the booking workflow owner.",
-            "url": "{{baseUrl}}/bookings/{{bookingId}}/approval"
-          }
-        },
-        {
-          "name": "DELETE Cancel Booking",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "description": "Intended endpoint: `DELETE /bookings/{{bookingId}}`\nExpected role: booking owner or `ADMIN`\nExpected status: `204 No Content`\nTODO: Keep this request if cancellation is modelled as delete instead of a status-only update.",
-            "url": "{{baseUrl}}/bookings/{{bookingId}}"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const data = pm.response.json();",
+              "pm.environment.set('bookingId', data.id);",
+              "pm.expect(data.status).to.eql('PENDING');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "02 Validation and Errors",
-      "item": [
+      "name": "POST Create Conflicting Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Shows overlap protection for the same resource/time.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceName\": \"{{resourceName}}\",\n  \"purpose\": \"Overlapping booking conflict test\",\n  \"attendees\": 4,\n  \"startTime\": \"{{bookingStartTime}}\",\n  \"endTime\": \"{{bookingEndTime}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
         {
-          "name": "POST Create Booking",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"bookingDate\": \"2026-04-28\",\n  \"startTime\": \"10:30\",\n  \"endTime\": \"11:30\",\n  \"purpose\": \"Conflicting slot test\",\n  \"expectedAttendees\": 4\n}"
-            },
-            "description": "Intended endpoint: `POST /bookings`\nExpected role: authenticated user\nExpected status: `409 Conflict`\nTODO: Run this after at least one approved booking exists for the same resource and time range.",
-            "url": "{{baseUrl}}/bookings"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('conflict returns 409', () => pm.response.to.have.status(409));"
+            ]
           }
         }
       ]
     },
     {
-      "name": "03 Role and Access",
-      "item": [
+      "name": "GET My Bookings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/my-bookings",
+        "description": "Current user booking list."
+      },
+      "event": [
         {
-          "name": "PATCH Approve Booking",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"APPROVED\",\n  \"reason\": \"Should fail for non-admin\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /bookings/{{bookingId}}/approval`\nExpected role: `ADMIN`\nExpected status: `403 Forbidden` when run with `{{accessToken}}`\nTODO: Keep this request as the booking approval authorization proof.",
-            "url": "{{baseUrl}}/bookings/{{bookingId}}/approval"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.be.an('array');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "99 Draft or Placeholder",
-      "item": [
+      "name": "GET Admin List Bookings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Admin booking list.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
         {
-          "name": "GET List Bookings",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /bookings?status=PENDING&date=2026-04-28`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nTODO: Use this request for admin-only booking reviews with filters.",
-            "url": "{{baseUrl}}/bookings?status=PENDING&date=2026-04-28"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.be.an('array');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT Approve Booking",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/approve",
+        "description": "Admin approves and triggers a notification plus QR generation.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().status).to.eql('APPROVED');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT Regenerate QR",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/qr",
+        "description": "QR proof for approved booking.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().qrCode).to.be.ok;"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT Check In Booking",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": "{{baseUrl}}/api/bookings/checkin/{{bookingId}}",
+        "description": "QR check-in endpoint.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().status).to.eql('CHECKED_IN');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST Create Booking To Reject",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings",
+        "description": "Creates a separate booking for rejection.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceName\": \"{{resourceName}}\",\n  \"purpose\": \"Rejection workflow test\",\n  \"attendees\": 3,\n  \"startTime\": \"{{rejectBookingStartTime}}\",\n  \"endTime\": \"{{rejectBookingEndTime}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('rejectBookingId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT Reject Booking",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/bookings/{{rejectBookingId}}/reject",
+        "description": "Admin rejection with reason.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Room reserved for examination preparation.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().status).to.eql('REJECTED');"
+            ]
           }
         }
       ]

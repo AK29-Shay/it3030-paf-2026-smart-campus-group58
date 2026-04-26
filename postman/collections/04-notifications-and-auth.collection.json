@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "b444911f-e3ad-43e3-bc30-8f43821dbf89",
+    "_postman_id": "44444444-4444-4000-8000-444444444444",
     "name": "04 Notifications and Auth",
-    "description": "Module owner: Kesavanabinayan12@gmail.com\n\nScope: signup, login, notifications, and role or auth-related scaffolding.\n\nHTTP methods scaffolded: GET, POST, PATCH, DELETE.\n\nImportant: real bearer tokens do not exist yet in this repo because the backend auth flow has not been implemented. Keep `{{accessToken}}` and `{{adminToken}}` empty until the API starts returning them.",
+    "description": "Auth extras, user management, and notification panel requests.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,259 +17,244 @@
   },
   "item": [
     {
-      "name": "01 Happy Path",
-      "item": [
-        {
-          "name": "POST Signup User",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Group 58 Student\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
-            },
-            "description": "Intended endpoint: `POST /auth/signup`\nExpected role: public\nExpected status: `201 Created`\nCurrent state: placeholder only until backend auth exists.\nTODO: Replace the payload with the final signup DTO and validation rules.",
-            "url": "{{baseUrl}}/auth/signup"
+      "name": "POST Signup Dynamic User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        },
-        {
-          "name": "POST Login User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  let data = {};",
-                  "  try {",
-                  "    data = pm.response.json();",
-                  "  } catch (error) {",
-                  "    console.log('Login response is not JSON yet.');",
-                  "  }",
-                  "  const token = data.token || data.accessToken || '';",
-                  "  if (token) {",
-                  "    pm.environment.set('accessToken', token);",
-                  "    console.log('Saved accessToken from login response.');",
-                  "  } else {",
-                  "    console.log('No token or accessToken field found in response.');",
-                  "  }",
-                  "}"
-                ]
-              }
+        ],
+        "url": "{{baseUrl}}/api/auth/signup",
+        "description": "Creates a dynamic user so repeated runs do not collide.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Dynamic User\",\n  \"email\": \"{{signupEmail}}\",\n  \"password\": \"ChangeMe123!\",\n  \"role\": \"USER\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
-            },
-            "description": "Intended endpoint: `POST /auth/login`\nExpected role: public\nExpected status: `200 OK`\nCurrent state: placeholder only until backend auth exists.\nBehavior when implemented: saves `token` or `accessToken` from the response into `{{accessToken}}`.",
-            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('signupEmail', `postman.user.${Date.now()}@example.com`);"
+            ]
           }
         },
         {
-          "name": "POST Login Admin",
-          "event": [
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const data = pm.response.json();",
+              "pm.environment.set('newUserId', data.user.id);",
+              "pm.expect(data.user.email).to.eql(pm.environment.get('signupEmail'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET List Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/notifications",
+        "description": "Current user notification list after booking/ticket workflows."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.be.an('array');",
+              "const items = pm.response.json(); if (items.length) pm.environment.set('notificationId', items[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET Unread Count",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/notifications/unread/count",
+        "description": "Unread notification badge count."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.have.property('count');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH Mark Notification Read",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+        "description": "Mark one notification read. If no notificationId exists, 404 is acceptable for an isolated run."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200 or 404 when no notification exists', () => pm.expect([200,404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH Mark All Notifications Read",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": "{{baseUrl}}/api/notifications/read-all",
+        "description": "Bulk read endpoint."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET Users By Role Technician",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/role/TECHNICIAN",
+        "description": "Admin user management lookup.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  let data = {};",
-                  "  try {",
-                  "    data = pm.response.json();",
-                  "  } catch (error) {",
-                  "    console.log('Admin login response is not JSON yet.');",
-                  "  }",
-                  "  const token = data.token || data.accessToken || '';",
-                  "  if (token) {",
-                  "    pm.environment.set('adminToken', token);",
-                  "    console.log('Saved adminToken from login response.');",
-                  "  } else {",
-                  "    console.log('No token or accessToken field found in response.');",
-                  "  }",
-                  "}"
-                ]
-              }
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
-            },
-            "description": "Intended endpoint: `POST /auth/login`\nExpected role: public login flow that returns an admin bearer token for an admin account.\nExpected status: `200 OK`\nCurrent state: placeholder only until backend auth exists.\nBehavior when implemented: saves `token` or `accessToken` from the response into `{{adminToken}}`.",
-            "url": "{{baseUrl}}/auth/login"
-          }
-        },
+          ]
+        }
+      },
+      "event": [
         {
-          "name": "GET List Notifications",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /notifications?read=false`\nExpected role: authenticated user\nExpected status: `200 OK`\nCurrent state: placeholder until the backend both implements auth and issues real bearer tokens.\nTODO: Replace the query parameters if unread filtering is modelled differently.",
-            "url": "{{baseUrl}}/notifications?read=false"
-          }
-        },
-        {
-          "name": "PATCH Mark Notification",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"read\": true\n}"
-            },
-            "description": "Intended endpoint: `PATCH /notifications/{{notificationId}}`\nExpected role: notification owner\nExpected status: `200 OK`\nCurrent state: placeholder until the backend both implements auth and issues real bearer tokens.\nTODO: Update this to the final mark-as-read route if the API uses a subresource.",
-            "url": "{{baseUrl}}/notifications/{{notificationId}}"
-          }
-        },
-        {
-          "name": "DELETE Delete Notification",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "description": "Intended endpoint: `DELETE /notifications/{{notificationId}}`\nExpected role: notification owner\nExpected status: `204 No Content`\nCurrent state: placeholder until the backend both implements auth and issues real bearer tokens.\nTODO: Keep this only if notifications are actually deletable in the final design.",
-            "url": "{{baseUrl}}/notifications/{{notificationId}}"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json()).to.be.an('array');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "02 Validation and Errors",
-      "item": [
-        {
-          "name": "POST Login User",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"WrongPassword123!\"\n}"
-            },
-            "description": "Intended endpoint: `POST /auth/login`\nExpected role: public\nExpected status: `401 Unauthorized`\nCurrent state: placeholder until the backend auth flow exists.\nTODO: Use this request as the reusable auth validation failure example.",
-            "url": "{{baseUrl}}/auth/login"
+      "name": "PUT Update Dynamic User Role",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        }
-      ]
-    },
-    {
-      "name": "03 Role and Access",
-      "item": [
-        {
-          "name": "PATCH Update User Role",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"role\": \"ADMIN\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /users/roles`\nExpected role: `ADMIN`\nExpected status: `200 OK`\nCurrent state: placeholder until the backend auth and role-management flow exists.\nTODO: Replace the payload and path with the final role-management contract if the project exposes one.",
-            "url": "{{baseUrl}}/users/roles"
+        ],
+        "url": "{{baseUrl}}/api/users/{{newUserId}}/role",
+        "description": "Admin role update creates a notification for the changed user.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"TECHNICIAN\",\n  \"technicianSpecialty\": \"GENERAL\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
           }
         },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
         {
-          "name": "PATCH Update User Role",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"role\": \"ADMIN\"\n}"
-            },
-            "description": "Intended endpoint: `PATCH /users/roles`\nExpected role: `ADMIN`\nExpected status: `403 Forbidden` when run with `{{accessToken}}`\nCurrent state: placeholder until the backend auth and role-management flow exists.\nTODO: Keep this request as the role-management access-control proof.",
-            "url": "{{baseUrl}}/users/roles"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.expect(pm.response.json().role).to.eql('TECHNICIAN');"
+            ]
           }
         }
       ]
     },
     {
-      "name": "99 Draft or Placeholder",
-      "item": [
+      "name": "DELETE Clear Notifications",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/notifications/clear",
+        "description": "Optional cleanup for the current user notification panel."
+      },
+      "event": [
         {
-          "name": "GET OAuth Redirect Status",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "description": "Intended endpoint: `GET /auth/oauth2/status`\nExpected role: public or callback flow\nExpected status: `200 OK`\nCurrent state: placeholder until OAuth or JWT auth is actually implemented.\nTODO: Replace this with the final OAuth status or callback verification endpoint when it exists.",
-            "url": "{{baseUrl}}/auth/oauth2/status"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 204', () => pm.response.to.have.status(204));"
+            ]
           }
         }
       ]

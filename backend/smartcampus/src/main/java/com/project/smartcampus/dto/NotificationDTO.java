@@ -37,7 +37,7 @@ public class NotificationDTO {
     public static NotificationDTO fromNotification(Notification notification) {
         return NotificationDTO.builder()
                 .id(notification.getId())
-                .recipientId(notification.getRecipient().getId())
+                .recipientId(notification.getRecipientId())
                 .type(notification.getType())
                 .title(notification.getTitle())
                 .message(notification.getMessage())

@@ -2,12 +2,12 @@ package com.project.smartcampus.repository;
 
 import com.project.smartcampus.entity.Booking;
 import com.project.smartcampus.enums.BookingStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends MongoRepository<Booking, Long> {
         // Overlapping booking checks
         List<Booking> findByResourceNameAndStartTimeLessThanAndEndTimeGreaterThan(
                         String resourceName,

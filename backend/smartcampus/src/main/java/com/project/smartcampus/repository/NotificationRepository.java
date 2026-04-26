@@ -1,8 +1,7 @@
 package com.project.smartcampus.repository;
 
 import com.project.smartcampus.entity.Notification;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
  * Repository for Notification entity operations.
  */
 @Repository
-public interface NotificationRepository extends JpaRepository<Notification, Long> {
+public interface NotificationRepository extends MongoRepository<Notification, Long> {
 
     List<Notification> findByRecipientIdOrderByCreatedAtDesc(Long recipientId);
 
@@ -19,6 +18,5 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     long countByRecipientIdAndIsReadFalse(Long recipientId);
 
-    @Modifying
     void deleteByRecipientId(Long recipientId);
 }
