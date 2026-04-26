@@ -94,10 +94,10 @@ def build_report():
     add_table(
         doc,
         [
-            ("Dakshika M G N", "IT23813984", "Facilities catalogue and resource management"),
-            ("Chamya N D", "IT23848184", "Booking workflow and QR check-in"),
-            ("Chamoda M S", "IT23832480", "Incident ticketing and attachments"),
-            ("Christopher K K", "IT23827530", "Authentication, user management, OAuth, notifications"),
+            ("IN Chinthana", "IT23699526", "Facilities catalogue and resource management"),
+            ("Abinayan K", "IT23764552", "Booking workflow and QR check-in"),
+            ("Dhayabari B", "IT23741478", "Incident ticketing and attachments"),
+            ("Akshayan I", "IT23587106", "Authentication, user management, OAuth, notifications"),
         ],
         ["Member", "Student ID", "Main Contribution"],
     )
@@ -295,10 +295,10 @@ def build_report():
     add_table(
         doc,
         [
-            ("Dakshika M G N - IT23813984", "Facilities catalogue", "Resource entity, repository, resource UI pages, images, filtering, admin resource management."),
-            ("Chamya N D - IT23848184", "Bookings", "Booking forms, admin approval dashboard, calendar/list views, QR/check-in workflow."),
-            ("Chamoda M S - IT23832480", "Tickets", "Ticket CRUD, attachments, technician assignment, ticket details, status updates, comments."),
-            ("Christopher K K - IT23827530", "Auth and notifications", "JWT/OAuth flows, user roles, profile/settings, notifications, Postman/report hardening."),
+            ("IN Chinthana - IT23699526", "Facilities catalogue", "Resource entity, repository, resource UI pages, images, filtering, admin resource management."),
+            ("Abinayan K - IT23764552", "Bookings", "Booking forms, admin approval dashboard, calendar/list views, QR/check-in workflow."),
+            ("Dhayabari B - IT23741478", "Tickets", "Ticket CRUD, attachments, technician assignment, ticket details, status updates, comments."),
+            ("Akshayan I - IT23587106", "Auth and notifications", "JWT/OAuth flows, user roles, profile/settings, notifications, Postman/report hardening."),
         ],
         ["Member", "Module", "Evidence Of Work"],
     )

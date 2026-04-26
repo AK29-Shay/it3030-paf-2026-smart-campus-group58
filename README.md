@@ -25,10 +25,10 @@ Smart Campus Operations Hub is a Spring Boot REST API and React web application 
 
 | Module | Member |
 | --- | --- |
-| Facilities catalogue and resource management | Dakshika M G N - IT23813984 |
-| Booking workflow and QR check-in | Chamya N D - IT23848184 |
-| Incident ticketing and attachments | Chamoda M S - IT23832480 |
-| Authentication, user management, OAuth, and notifications | Christopher K K - IT23827530 |
+| Facilities catalogue and resource management | IN Chinthana - IT23699526 |
+| Booking workflow and QR check-in | Abinayan K - IT23764552 |
+| Incident ticketing and attachments | Dhayabari B - IT23741478 |
+| Authentication, user management, OAuth, and notifications | Akshayan I - IT23587106 |
 
 ## Backend Setup
 

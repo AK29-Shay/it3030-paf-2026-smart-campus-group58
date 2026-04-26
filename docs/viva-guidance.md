@@ -21,10 +21,10 @@ Smart Campus Operations Hub is a role-based web platform for campus facilities, 
 
 | Member | Area | What To Explain |
 | --- | --- | --- |
-| Dakshika M G N - IT23813984 | Facilities catalogue | Resource entity, MongoDB `resources` collection, CRUD endpoints, filtering, validation, active/out-of-service status. |
-| Chamya N D - IT23848184 | Bookings | Booking workflow, conflict query, QR generation, check-in endpoint, admin approval/rejection. |
-| Chamoda M S - IT23832480 | Tickets | Ticket entity, file upload safety, technician assignment, assignment history, status flow, comments/replies. |
-| Christopher K K - IT23827530 | Auth and notifications | JWT token creation, Google OAuth flow, role checks, notification storage and read/delete endpoints. |
+| IN Chinthana - IT23699526 | Facilities catalogue | Resource entity, MongoDB `resources` collection, CRUD endpoints, filtering, validation, active/out-of-service status. |
+| Abinayan K - IT23764552 | Bookings | Booking workflow, conflict query, QR generation, check-in endpoint, admin approval/rejection. |
+| Dhayabari B - IT23741478 | Tickets | Ticket entity, file upload safety, technician assignment, assignment history, status flow, comments/replies. |
+| Akshayan I - IT23587106 | Auth and notifications | JWT token creation, Google OAuth flow, role checks, notification storage and read/delete endpoints. |
 
 ## 4. Database Design
 
