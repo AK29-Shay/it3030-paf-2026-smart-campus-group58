@@ -49,7 +49,7 @@ class CustomOAuth2UserServiceTest {
                 .clientId("test-client-id")
                 .clientSecret("test-client-secret")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("http://localhost:8086/login/oauth2/code/google")
+                .redirectUri("http://localhost:8080/login/oauth2/code/google")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
                 .tokenUri("https://oauth2.googleapis.com/token")
                 .userInfoUri("https://openidconnect.googleapis.com/v1/userinfo")

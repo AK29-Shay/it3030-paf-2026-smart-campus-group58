@@ -9,6 +9,7 @@ import com.project.smartcampus.services.UserService;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +46,7 @@ public class BookingController {
 
     // Get all bookings with optional filters - accessible to admins only
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<BookingResponse> getAllBookings(
             @RequestParam(required = false) String resourceName,
             @RequestParam(required = false) BookingStatus status) {
@@ -78,18 +80,21 @@ public class BookingController {
 
     // Approve a booking - accessible to admins only
     @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse approveBooking(@PathVariable Long id) {
         return service.approveBooking(id);
     }
 
     // Regenerate QR code for a booking
     @PutMapping("/{id}/qr")
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse regenerateQr(@PathVariable Long id) {
         return service.regenerateQr(id);
     }
 
     // Reject a booking with reason - accessible to admins only
     @PutMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingResponse rejectBooking(
             @PathVariable Long id,
             @Valid @RequestBody RejectBookingRequest request) {

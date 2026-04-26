@@ -1,11 +1,12 @@
 package com.project.smartcampus.services;
 
 import com.project.smartcampus.dto.NotificationDTO;
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.exception.ResourceNotFoundException;
 import com.project.smartcampus.exception.UnauthorizedException;
 import com.project.smartcampus.entity.Notification;
-import com.project.smartcampus.enums.NotificationType;
 import com.project.smartcampus.entity.User;
+import com.project.smartcampus.enums.NotificationType;
 import com.project.smartcampus.repository.NotificationRepository;
 import com.project.smartcampus.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -50,14 +51,21 @@ public class NotificationService {
         User recipient = userRepository.findById(recipientId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + recipientId));
 
+        if (!Boolean.TRUE.equals(recipient.getNotificationsEnabled())) {
+            log.info("Notification skipped because user {} disabled notifications.", recipientId);
+            return null;
+        }
+
         Notification notification = Notification.builder()
-                .recipient(recipient)
+                .id(MongoIdGenerator.nextId())
+                .recipientId(recipientId)
                 .type(type)
                 .title(title)
                 .message(message)
                 .referenceId(referenceId)
                 .referenceType(referenceType)
                 .isRead(false)
+                .createdAt(java.time.LocalDateTime.now())
                 .build();
 
         Notification saved = notificationRepository.save(notification);
@@ -113,7 +121,7 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
-        if (!notification.getRecipient().getId().equals(userId)) {
+        if (!notification.getRecipientId().equals(userId)) {
             throw new UnauthorizedException("You do not have access to this notification");
         }
 
@@ -147,7 +155,7 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
-        if (!notification.getRecipient().getId().equals(userId)) {
+        if (!notification.getRecipientId().equals(userId)) {
             throw new UnauthorizedException("You do not have access to this notification");
         }
 

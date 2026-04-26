@@ -83,7 +83,7 @@ function ResourceList() {
   };
 
   const loadResources = () => {
-    fetch("http://localhost:8086/resources")
+    fetch("http://localhost:8080/resources")
       .then((res) => res.json())
       .then((data) => setResources(data));
   };

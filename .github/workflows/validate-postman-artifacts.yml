@@ -1,19 +1,70 @@
-name: Validate Postman Artifacts
+name: Build and Validate Smart Campus
 
 on:
   push:
     branches:
       - dev
       - main
-    paths:
-      - "postman/**"
-      - ".github/workflows/validate-postman-artifacts.yml"
   pull_request:
-    paths:
-      - "postman/**"
-      - ".github/workflows/validate-postman-artifacts.yml"
 
 jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Run backend tests
+        working-directory: backend/smartcampus
+        env:
+          TEST_MONGODB_URI: mongodb://localhost:27017/smartcampus_test
+        run: ./mvnw -B test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/smartcampus/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend/smartcampus
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend/smartcampus
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend/smartcampus
+        run: npm run build
+
   validate-postman-artifacts:
     runs-on: ubuntu-latest
 
@@ -38,6 +89,7 @@ jobs:
             "postman/collections/04-notifications-and-auth.collection.json"
             "postman/environments/local.environment.json"
             "postman/environments/demo.environment.json"
+            "postman/environments/local.postman_environment.json"
           )
 
           for file in "${required[@]}"; do
@@ -61,15 +113,15 @@ jobs:
               "03 Tickets",
               "04 Notifications and Auth",
           }
-          expected_environments = {"Local", "Demo"}
+          expected_environment_names = {"Local", "Demo", "Smart Campus Local"}
 
           collection_files = sorted(Path("postman/collections").glob("*.json"))
           environment_files = sorted(Path("postman/environments").glob("*.json"))
 
           if len(collection_files) != 5:
               raise SystemExit(f"Expected 5 collection files, found {len(collection_files)}")
-          if len(environment_files) != 2:
-              raise SystemExit(f"Expected 2 environment files, found {len(environment_files)}")
+          if len(environment_files) < 3:
+              raise SystemExit(f"Expected at least 3 environment files, found {len(environment_files)}")
 
           collection_names = set()
           environment_names = set()
@@ -88,6 +140,6 @@ jobs:
 
           if collection_names != expected_collections:
               raise SystemExit(f"Unexpected collection names: {sorted(collection_names)}")
-          if environment_names != expected_environments:
-              raise SystemExit(f"Unexpected environment names: {sorted(environment_names)}")
+          if not expected_environment_names.issubset(environment_names):
+              raise SystemExit(f"Missing environment names: {sorted(expected_environment_names - environment_names)}")
           PY

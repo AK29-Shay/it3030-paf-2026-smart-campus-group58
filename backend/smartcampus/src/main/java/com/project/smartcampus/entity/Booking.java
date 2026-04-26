@@ -1,15 +1,14 @@
 package com.project.smartcampus.entity;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import com.project.smartcampus.enums.BookingStatus;
+import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "bookings")
+@Document(collection = "bookings")
 public class Booking {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String resourceName;
@@ -26,7 +25,6 @@ public class Booking {
 
     private String rejectionReason;
 
-    @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
     private String qrCode;
@@ -52,6 +50,10 @@ public class Booking {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getResourceName() {

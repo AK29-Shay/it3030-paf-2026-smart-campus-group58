@@ -3,36 +3,28 @@ package com.project.smartcampus.entity;
 import com.project.smartcampus.enums.TicketCategory;
 import com.project.smartcampus.enums.TicketPriority;
 import com.project.smartcampus.enums.TicketStatus;
-
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "tickets")
+@Document(collection = "tickets")
 public class Ticket {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
 
     private String description;
 
-    @ElementCollection
-    @CollectionTable(name = "ticket_images", joinColumns = @JoinColumn(name = "ticket_id"))
-    @Column(name = "image_path")
     private List<String> imagePaths = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
     private TicketCategory category;
 
-    @Enumerated(EnumType.STRING)
     private TicketPriority priority;
 
-    @Enumerated(EnumType.STRING)
     private TicketStatus status;
 
     private Long createdBy;
@@ -46,17 +38,6 @@ public class Ticket {
     private LocalDateTime resolvedAt;
 
     public Ticket() {
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() { return id; }

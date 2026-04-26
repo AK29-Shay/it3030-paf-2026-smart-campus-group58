@@ -23,13 +23,13 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
 
         response.put("timestamp", LocalDateTime.now());
-        response.put("status", 400);
-        response.put("error", "Bad Request");
+        response.put("status", 409);
+        response.put("error", "Conflict");
         response.put("message", ex.getMessage());
 
         return new ResponseEntity<>(
                 response,
-                HttpStatus.BAD_REQUEST
+                HttpStatus.CONFLICT
         );
     }
 

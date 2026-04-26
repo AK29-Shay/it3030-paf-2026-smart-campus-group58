@@ -8,19 +8,15 @@ export default defineConfig({
     allowedHosts: ["crucial-storewide-domestic.ngrok-free.dev"],
     proxy: {
       "/api": {
-        target: "http://localhost:8086",
-        changeOrigin: true,
-      },
-      "^/tickets/": {
-        target: "http://localhost:8086",
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
       "^/uploads/": {
-        target: "http://localhost:8086",
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
       "^/qr/": {
-        target: "http://localhost:8086",
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
     },

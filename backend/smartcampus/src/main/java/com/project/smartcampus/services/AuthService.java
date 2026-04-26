@@ -1,5 +1,6 @@
 package com.project.smartcampus.services;
 
+import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.config.JwtUtil;
 import com.project.smartcampus.dto.ApiMessageResponse;
 import com.project.smartcampus.dto.AuthResponse;
@@ -54,6 +55,7 @@ public class AuthService {
         TechnicianSpecialty normalizedSpecialty = normalizeTechnicianSpecialty(request.getTechnicianSpecialty());
 
         User user = User.builder()
+            .id(MongoIdGenerator.nextId())
                 .name(request.getName().trim())
                 .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -66,6 +68,8 @@ public class AuthService {
                     : null)
                 .provider("LOCAL")
                 .notificationsEnabled(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         user = userRepository.save(user);

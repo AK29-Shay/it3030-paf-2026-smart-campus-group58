@@ -14,6 +14,7 @@ import com.project.smartcampus.dto.TicketCommentResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +41,7 @@ public class TicketController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
     public ResponseEntity<List<TicketResponse>> getAllTickets() {
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
@@ -60,6 +62,7 @@ public class TicketController {
     }
 
     @PutMapping("/{ticketId}/assign")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketResponse> assignTechnician(
             @PathVariable Long ticketId,
             @RequestBody AssignTechnicianRequest request,
@@ -73,6 +76,7 @@ public class TicketController {
     }
 
     @PutMapping("/{ticketId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
     public ResponseEntity<TicketResponse> updateTicketStatus(
             @PathVariable Long ticketId,
             @RequestBody UpdateTicketStatusRequest request) {

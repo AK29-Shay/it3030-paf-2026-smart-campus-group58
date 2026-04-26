@@ -62,6 +62,13 @@ function TechnicianTickets() {
 
   useEffect(() => {
     const fetchTechnicians = async () => {
+      if (user?.role !== "ADMIN") {
+        if (user?.id) {
+          registerTechnicians([user]);
+        }
+        return;
+      }
+
       try {
         const res = await API.get("/users/role/TECHNICIAN");
         const technicians = Array.isArray(res.data) ? res.data : [];
@@ -72,7 +79,7 @@ function TechnicianTickets() {
     };
 
     fetchTechnicians();
-  }, []);
+  }, [user]);
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {

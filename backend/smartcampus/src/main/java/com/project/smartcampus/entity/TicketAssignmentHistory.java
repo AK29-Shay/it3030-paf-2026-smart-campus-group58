@@ -1,44 +1,26 @@
 package com.project.smartcampus.entity;
 
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "ticket_assignment_history")
+@Document(collection = "ticket_assignment_history")
 public class TicketAssignmentHistory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private Long ticketId;
 
-    @Column(nullable = false)
     private Long assignedBy;
 
-    @Column
     private Long fromTechnicianId;
 
-    @Column(nullable = false)
     private Long toTechnicianId;
 
-    @Column(nullable = false, length = 500)
     private String reason;
 
-    @Column(nullable = false)
     private LocalDateTime assignedAt;
-
-    public TicketAssignmentHistory() {
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        if (assignedAt == null) {
-            assignedAt = LocalDateTime.now();
-        }
-    }
 
     public Long getId() {
         return id;
