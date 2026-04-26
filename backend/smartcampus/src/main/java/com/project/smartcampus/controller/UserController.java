@@ -1,75 +1,77 @@
 package com.project.smartcampus.controller;
 
+import com.project.smartcampus.dto.RoleUpdateRequest;
+import com.project.smartcampus.dto.UserDTO;
 import com.project.smartcampus.enums.Role;
-import com.project.smartcampus.services.AuthService;
-import com.project.smartcampus.util.HttpUtil;
-import com.project.smartcampus.util.JsonUtil;
-import com.sun.net.httpserver.HttpExchange;
+import com.project.smartcampus.services.UserService;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import java.util.List;
 
+/**
+ * Controller for user management operations (ADMIN only).
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/users")
 public class UserController {
-    private final AuthService authService;
 
-    public UserController(AuthService authService) {
-        this.authService = authService;
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    public boolean canHandle(String path) {
-        return "/users/me".equals(path) || "/users/roles".equals(path);
+    /**
+     * Returns all registered users. ADMIN only.
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    public void handle(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-        if ("/users/me".equals(path)) {
-            handleCurrentUser(exchange);
-            return;
-        }
-        if ("/users/roles".equals(path)) {
-            handleRoleUpdate(exchange);
-            return;
-        }
-        HttpUtil.sendJson(exchange, 404, JsonUtil.message("Route not found."));
+    /**
+     * Returns a specific user by ID. ADMIN only.
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    private void handleCurrentUser(HttpExchange exchange) throws IOException {
-        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        try {
-            AuthService.AuthenticatedUser user = authService.requireAuthenticated(exchange.getRequestHeaders().getFirst("Authorization"));
-            HttpUtil.sendJson(exchange, 200, JsonUtil.userResponse(user));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
+    /**
+     * Updates the role of a user. ADMIN only.
+     */
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> updateUserRole(
+            @PathVariable Long id,
+            @Valid @RequestBody RoleUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateUserRole(id, request));
     }
 
-    private void handleRoleUpdate(HttpExchange exchange) throws IOException {
-        if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
+    /**
+     * Deletes a user. ADMIN only.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 
-        String body = HttpUtil.readBody(exchange);
-        String email = JsonUtil.extractString(body, "email");
-        String roleValue = JsonUtil.extractString(body, "role");
-        if (email == null || roleValue == null) {
-            HttpUtil.sendJson(exchange, 400, JsonUtil.message("Email and role are required."));
-            return;
-        }
-
-        try {
-            Role role = Role.valueOf(roleValue.trim().toUpperCase());
-            AuthService.AuthenticatedUser updated = authService.updateRole(exchange.getRequestHeaders().getFirst("Authorization"), email, role);
-            HttpUtil.sendJson(exchange, 200, JsonUtil.userResponse(updated));
-        } catch (IllegalArgumentException exception) {
-            HttpUtil.sendJson(exchange, 400, JsonUtil.message(exception.getMessage()));
-        } catch (IllegalStateException exception) {
-            HttpUtil.sendJson(exchange, 403, JsonUtil.message("Forbidden"));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
+    /**
+     * Returns all users with a specific role. ADMIN only.
+     * Useful for listing all technicians.
+     */
+    @GetMapping("/role/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserDTO>> getUsersByRole(@PathVariable Role role) {
+        return ResponseEntity.ok(userService.getUsersByRole(role));
     }
 }

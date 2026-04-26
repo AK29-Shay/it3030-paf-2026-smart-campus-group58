@@ -1,6 +1,28 @@
 package com.project.smartcampus.dto;
 
-import com.project.smartcampus.enums.Role;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record AuthResponse(String accessToken, String email, Role role) {
+/**
+ * Response DTO for authentication, containing JWT token and user info.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuthResponse {
+
+    private String token;
+    private String tokenType;
+    private UserDTO user;
+
+    public static AuthResponse of(String token, UserDTO user) {
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .user(user)
+                .build();
+    }
 }

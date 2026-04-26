@@ -1,97 +1,104 @@
 package com.project.smartcampus.config;
 
-import com.project.smartcampus.enums.Role;
+import com.project.smartcampus.entity.User;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Date;
 
+/**
+ * Utility class for generating and validating JWT tokens.
+ */
+@Slf4j
+@Component
 public class JwtUtil {
-    private static final Pattern SUBJECT_PATTERN = Pattern.compile("\"sub\"\\s*:\\s*\"([^\"]+)\"");
-    private static final Pattern ROLE_PATTERN = Pattern.compile("\"role\"\\s*:\\s*\"([^\"]+)\"");
-    private static final Pattern EXP_PATTERN = Pattern.compile("\"exp\"\\s*:\\s*(\\d+)");
 
-    private final byte[] secret;
-    private final long expirationSeconds;
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
 
-    public JwtUtil(String secret, long expirationSeconds) {
-        this.secret = secret.getBytes(StandardCharsets.UTF_8);
-        this.expirationSeconds = expirationSeconds;
+    @Value("${app.jwt.expiration}")
+    private long jwtExpiration;
+
+    /**
+     * Generates a JWT token for the given user.
+     *
+     * @param user the authenticated user
+     * @return signed JWT token string
+     */
+    public String generateToken(User user) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
+        return Jwts.builder()
+            .setSubject(String.valueOf(user.getId()))
+                .claim("email", user.getEmail())
+                .claim("role", user.getRole().name())
+                .claim("name", user.getName())
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+            .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 
-    public String generateToken(String email, Role role) {
-        long issuedAt = Instant.now().getEpochSecond();
-        long expiresAt = issuedAt + expirationSeconds;
-        String header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-        String payload = "{\"sub\":\"" + escape(email) + "\",\"role\":\"" + role.name() + "\",\"iat\":" + issuedAt + ",\"exp\":" + expiresAt + "}";
-
-        String headerPart = encode(header);
-        String payloadPart = encode(payload);
-        String signaturePart = sign(headerPart + "." + payloadPart);
-        return headerPart + "." + payloadPart + "." + signaturePart;
-    }
-
-    public TokenClaims validateToken(String token) {
-        if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Missing bearer token.");
-        }
-
-        String[] parts = token.split("\\.");
-        if (parts.length != 3) {
-            throw new IllegalArgumentException("Invalid token format.");
-        }
-
-        String expectedSignature = sign(parts[0] + "." + parts[1]);
-        if (!expectedSignature.equals(parts[2])) {
-            throw new IllegalArgumentException("Invalid token signature.");
-        }
-
-        String payload = decode(parts[1]);
-        String email = extract(payload, SUBJECT_PATTERN, "Missing subject.");
-        String roleValue = extract(payload, ROLE_PATTERN, "Missing role.");
-        long expiresAt = Long.parseLong(extract(payload, EXP_PATTERN, "Missing expiry."));
-        if (Instant.now().getEpochSecond() >= expiresAt) {
-            throw new IllegalArgumentException("Token has expired.");
-        }
-
-        return new TokenClaims(email, Role.valueOf(roleValue), expiresAt);
-    }
-
-    private String encode(String value) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private String decode(String value) {
-        return new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
-    }
-
-    private String sign(String data) {
+    /**
+     * Validates a JWT token.
+     *
+     * @param token the JWT token to validate
+     * @return true if valid, false otherwise
+     */
+    public boolean validateToken(String token) {
         try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret, "HmacSHA256"));
-            byte[] signature = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
-        } catch (Exception exception) {
-            throw new IllegalStateException("Unable to sign JWT.", exception);
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
+            return false;
         }
     }
 
-    private String extract(String payload, Pattern pattern, String message) {
-        Matcher matcher = pattern.matcher(payload);
-        if (!matcher.find()) {
-            throw new IllegalArgumentException(message);
-        }
-        return matcher.group(1);
+    /**
+     * Extracts the user ID from a JWT token.
+     *
+     * @param token the JWT token
+     * @return user ID as Long
+     */
+    public Long extractUserId(String token) {
+        return Long.parseLong(extractClaims(token).getSubject());
     }
 
-    private String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    /**
+     * Extracts the email from a JWT token.
+     *
+     * @param token the JWT token
+     * @return email string
+     */
+    public String extractEmail(String token) {
+        return extractClaims(token).get("email", String.class);
     }
 
-    public record TokenClaims(String email, Role role, long expiresAt) {
+    /**
+     * Extracts the role from a JWT token.
+     *
+     * @param token the JWT token
+     * @return role string
+     */
+    public String extractRole(String token) {
+        return extractClaims(token).get("role", String.class);
+    }
+
+    private Claims extractClaims(String token) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        return Jwts.parserBuilder()
+            .setSigningKey(key)
+                .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 }

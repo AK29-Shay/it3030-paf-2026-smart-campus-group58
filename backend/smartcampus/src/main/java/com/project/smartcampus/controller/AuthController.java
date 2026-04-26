@@ -1,87 +1,127 @@
 package com.project.smartcampus.controller;
 
+import com.project.smartcampus.dto.ApiMessageResponse;
 import com.project.smartcampus.dto.AuthResponse;
+import com.project.smartcampus.dto.ForgotPasswordRequest;
+import com.project.smartcampus.dto.ForgotPasswordResponse;
+import com.project.smartcampus.dto.LoginRequest;
+import com.project.smartcampus.dto.ResetPasswordRequest;
+import com.project.smartcampus.dto.SignupRequest;
+import com.project.smartcampus.dto.UpdateNotificationSettingsRequest;
+import com.project.smartcampus.dto.UpdateProfileRequest;
+import com.project.smartcampus.dto.UserDTO;
 import com.project.smartcampus.services.AuthService;
-import com.project.smartcampus.services.NotificationService;
-import com.project.smartcampus.util.HttpUtil;
-import com.project.smartcampus.util.JsonUtil;
-import com.sun.net.httpserver.HttpExchange;
+import com.project.smartcampus.services.UserService;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-
+/**
+ * Controller handling authentication-related endpoints.
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/auth")
 public class AuthController {
+
+    private final UserService userService;
     private final AuthService authService;
-    private final NotificationService notificationService;
 
-    public AuthController(AuthService authService, NotificationService notificationService) {
+    public AuthController(UserService userService, AuthService authService) {
+        this.userService = userService;
         this.authService = authService;
-        this.notificationService = notificationService;
     }
 
-    public boolean canHandle(String path) {
-        return "/auth/signup".equals(path) || "/auth/login".equals(path);
+    /**
+     * Registers a new local account and returns a JWT token.
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return ResponseEntity.ok(authService.signup(request));
     }
 
-    public void handle(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-        if ("/auth/signup".equals(path)) {
-            handleSignup(exchange);
-            return;
-        }
-        if ("/auth/login".equals(path)) {
-            handleLogin(exchange);
-            return;
-        }
-        HttpUtil.sendJson(exchange, 404, JsonUtil.message("Route not found."));
+    /**
+     * Authenticates a local account and returns a JWT token.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 
-    private void handleSignup(HttpExchange exchange) throws IOException {
-        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        String body = HttpUtil.readBody(exchange);
-        String name = JsonUtil.extractString(body, "name");
-        String email = JsonUtil.extractString(body, "email");
-        String password = JsonUtil.extractString(body, "password");
-        if (isBlank(name) || isBlank(email) || isBlank(password)) {
-            HttpUtil.sendJson(exchange, 400, JsonUtil.message("Name, email, and password are required."));
-            return;
-        }
-
-        try {
-            AuthResponse response = authService.signup(name, email, password);
-            notificationService.addWelcomeNotification(response.email(), name);
-            HttpUtil.sendJson(exchange, 201, JsonUtil.authResponse(response));
-        } catch (IllegalArgumentException exception) {
-            HttpUtil.sendJson(exchange, 409, JsonUtil.message(exception.getMessage()));
-        }
+    /**
+     * Generates a password reset token for an email if an account exists.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
-    private void handleLogin(HttpExchange exchange) throws IOException {
-        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-            HttpUtil.sendMethodNotAllowed(exchange);
-            return;
-        }
-
-        String body = HttpUtil.readBody(exchange);
-        String email = JsonUtil.extractString(body, "email");
-        String password = JsonUtil.extractString(body, "password");
-        if (isBlank(email) || isBlank(password)) {
-            HttpUtil.sendJson(exchange, 400, JsonUtil.message("Email and password are required."));
-            return;
-        }
-
-        try {
-            AuthResponse response = authService.login(email, password);
-            HttpUtil.sendJson(exchange, 200, JsonUtil.authResponse(response));
-        } catch (SecurityException exception) {
-            HttpUtil.sendJson(exchange, 401, JsonUtil.message(exception.getMessage()));
-        }
+    /**
+     * Completes a password reset using a valid reset token.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiMessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+    /**
+     * Returns the currently authenticated user's info.
+     * Used by the frontend to validate the JWT token on app load.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(Authentication authentication) {
+        UserDTO user = userService.getCurrentUser(authentication);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Updates profile details of the currently authenticated user.
+     */
+    @PutMapping("/me/profile")
+    public ResponseEntity<UserDTO> updateCurrentUserProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(userService.updateCurrentUserProfile(authentication, request));
+    }
+
+    /**
+     * Updates notification preference of the currently authenticated user.
+     */
+    @PutMapping("/me/notification-settings")
+    public ResponseEntity<UserDTO> updateNotificationSettings(
+            Authentication authentication,
+            @Valid @RequestBody UpdateNotificationSettingsRequest request) {
+        return ResponseEntity.ok(userService.updateCurrentUserNotificationSettings(authentication, request));
+    }
+
+    /**
+     * Called after a successful OAuth2 login.
+     * The actual token generation and redirect is handled by OAuth2LoginSuccessHandler.
+     * This endpoint is a fallback/informational endpoint.
+     */
+    @GetMapping("/login/success")
+    public ResponseEntity<String> loginSuccess() {
+        return ResponseEntity.ok("Login successful. Token issued via redirect.");
+    }
+
+    /**
+     * Called when OAuth2 login fails.
+     */
+    @GetMapping("/login/failure")
+    public ResponseEntity<String> loginFailure() {
+        return ResponseEntity.status(401).body("OAuth2 login failed. Please try again.");
+    }
+
+    /**
+     * Logs out the current user.
+     * Since we use stateless JWT, the frontend should discard the token.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok("Logged out successfully. Please discard your token.");
     }
 }
