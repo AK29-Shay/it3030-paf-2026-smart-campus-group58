@@ -50,6 +50,11 @@ function AdminDashboard() {
       title: "Resource Overview",
       desc: "Track inventory and maintenance readiness.",
     },
+    {
+      to: "/admin/command-center",
+      title: "Command Center",
+      desc: "Monitor live risk signals, demand trends, and SLA pressure.",
+    },
   ];
 
   const sideLinks = [
@@ -58,6 +63,7 @@ function AdminDashboard() {
     { to: "/admin/resources", label: "Resources" },
     { to: "/admin/bookings", label: "Bookings", end: true },
     { to: "/tickets/admin", label: "Tickets" },
+    { to: "/admin/command-center", label: "Command Center" },
   ];
 
   useEffect(() => {

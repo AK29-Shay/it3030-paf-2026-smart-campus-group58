@@ -1,0 +1,13 @@
+flowchart LR
+    User[Campus User] --> React[React Vite Frontend]
+    Admin[Admin User] --> React
+    Tech[Technician] --> React
+    React -->|JWT / OAuth2 redirect token| API[Spring Boot REST API]
+    API --> Security[Spring Security and JWT Filter]
+    API --> Services[Service Layer]
+    Services --> Repositories[MongoDB Repositories]
+    Repositories --> Mongo[(MongoDB Atlas)]
+    API --> Uploads[Ticket Image Upload Storage]
+    API --> QR[QR Code Generation]
+    React --> Vercel[Vercel Frontend Deployment]
+    API --> LocalDemo[Local Spring Boot Demo Backend]

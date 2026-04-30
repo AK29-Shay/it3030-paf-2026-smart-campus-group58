@@ -1,97 +1,78 @@
-#!/bin/bash
-# ============================================================
-#  Smart Campus Operations Hub — API Evidence (curl tests)
-#  Group 58 | IT3030 PAF 2026
-#  Prerequisites: backend running on localhost:8080
-#  Run: bash scripts/api_tests.sh
-# ============================================================
+#!/usr/bin/env bash
+set -euo pipefail
 
-BASE="http://localhost:8080"
+BASE="${BASE:-http://localhost:8080}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 DIVIDER="============================================================"
 
-echo ""
-echo "$DIVIDER"
-echo "  Smart Campus API Test Evidence"
-echo "  $(date '+%Y-%m-%d %H:%M:%S')"
-echo "$DIVIDER"
-
-# ── Helpers ────────────────────────────────────────────────
-hit() {
-  echo ""
-  echo "► $1"
-  echo "  $2"
-  echo ""
-  eval "$3" | python3 -m json.tool 2>/dev/null || eval "$3"
-  echo ""
+json_value() {
+  "$PYTHON_BIN" -c "import sys,json; print(json.load(sys.stdin).get('$1',''))"
 }
 
-# ── 1. Health ───────────────────────────────────────────────
-echo ""
-echo "=== [1] Health Check ==="
-hit "GET /actuator/health" \
-    "Verify the Spring Boot server is running" \
-    "curl -s $BASE/actuator/health"
+call_json() {
+  local label="$1"
+  local command="$2"
+  echo ""
+  echo ">>> $label"
+  printf '%s' "$command" | "$PYTHON_BIN" -c "import re,sys; print(re.sub(r'Bearer [A-Za-z0-9._-]+','Bearer <redacted>',sys.stdin.read()))"
+  local output
+  output=$(eval "$command")
+  if ! echo "$output" | "$PYTHON_BIN" -m json.tool 2>/dev/null; then
+    echo "$output"
+  fi
+}
 
-# ── 2. Auth — Signup ────────────────────────────────────────
-echo "=== [2] Auth — Signup (POST /api/auth/signup) ==="
-SIGNUP=$(curl -s -X POST "$BASE/api/auth/signup" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test Evidence User","email":"evidence_'$(date +%s)'@test.com","password":"Evidence@123"}')
-echo "$SIGNUP" | python3 -m json.tool 2>/dev/null || echo "$SIGNUP"
-TOKEN=$(echo "$SIGNUP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token',''))" 2>/dev/null)
+redact_token() {
+  "$PYTHON_BIN" -c "import json,sys; data=json.load(sys.stdin); data['token']='<redacted>'; print(json.dumps(data, indent=2))" 2>/dev/null || cat
+}
 
-# ── 3. Auth — Login ─────────────────────────────────────────
+login() {
+  local email="$1"
+  local role="$2"
+  curl -s -X POST "$BASE/api/auth/login" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"$email\",\"password\":\"ChangeMe123!\",\"role\":\"$role\"}"
+}
+
 echo ""
-echo "=== [3] Auth — Login (POST /api/auth/login) ==="
-LOGIN=$(curl -s -X POST "$BASE/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"student@example.com","password":"ChangeMe123!"}')
-echo "$LOGIN" | python3 -m json.tool 2>/dev/null || echo "$LOGIN"
-if [ -z "$TOKEN" ]; then
-  TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('token',''))" 2>/dev/null)
+echo "$DIVIDER"
+echo "Smart Campus API Evidence"
+date "+%Y-%m-%d %H:%M:%S"
+echo "$DIVIDER"
+
+ADMIN_LOGIN=$(login "admin@example.com" "ADMIN")
+USER_LOGIN=$(login "student@example.com" "USER")
+TECH_LOGIN=$(login "technician@example.com" "TECHNICIAN")
+
+ADMIN_TOKEN=$(echo "$ADMIN_LOGIN" | json_value token)
+USER_TOKEN=$(echo "$USER_LOGIN" | json_value token)
+TECH_TOKEN=$(echo "$TECH_LOGIN" | json_value token)
+ADMIN_LOGIN_REDACTED=$(echo "$ADMIN_LOGIN" | redact_token)
+
+if [ -z "$ADMIN_TOKEN" ] || [ -z "$USER_TOKEN" ] || [ -z "$TECH_TOKEN" ]; then
+  echo "Failed to obtain one or more JWT tokens."
+  echo "$ADMIN_LOGIN"
+  echo "$USER_LOGIN"
+  echo "$TECH_LOGIN"
+  exit 1
 fi
-echo "  [JWT token obtained: ${#TOKEN} chars]"
 
-AUTH="Authorization: Bearer $TOKEN"
+ADMIN_AUTH="Authorization: Bearer $ADMIN_TOKEN"
+USER_AUTH="Authorization: Bearer $USER_TOKEN"
+TECH_AUTH="Authorization: Bearer $TECH_TOKEN"
 
-# ── 4. Auth — Get Me ────────────────────────────────────────
-echo ""
-echo "=== [4] Auth — GET /api/auth/me ==="
-curl -s "$BASE/api/auth/me" -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 5. Resources — GET ALL ──────────────────────────────────
-echo ""
-echo "=== [5] Resources — GET /api/resources ==="
-curl -s "$BASE/api/resources" -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 6. Resources — GET BY TYPE ──────────────────────────────
-echo ""
-echo "=== [6] Resources — GET /api/resources/type/ROOM ==="
-curl -s "$BASE/api/resources/type/ROOM" -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 7. Bookings — GET My Bookings ───────────────────────────
-echo ""
-echo "=== [7] Bookings — GET /api/bookings/my-bookings ==="
-curl -s "$BASE/api/bookings/my-bookings" -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 8. Bookings — Availability Check ────────────────────────
-echo ""
-echo "=== [8] Bookings — GET /api/bookings/availability ==="
-curl -s "$BASE/api/bookings/availability?resourceName=LH1&start=2026-05-01T09:00:00&end=2026-05-01T10:00:00" \
-  -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 9. Tickets — GET My Tickets ─────────────────────────────
-echo ""
-echo "=== [9] Tickets — GET /api/tickets ==="
-curl -s "$BASE/api/tickets" -H "$AUTH" | python3 -m json.tool 2>/dev/null
-
-# ── 10. Notifications — GET Unread Count ────────────────────
-echo ""
-echo "=== [10] Notifications — GET /api/notifications/unread/count ==="
-curl -s "$BASE/api/notifications/unread/count" -H "$AUTH" | python3 -m json.tool 2>/dev/null
+call_json "GET /" "curl -s '$BASE/'"
+call_json "POST /api/auth/login (ADMIN)" "printf '%s' '$ADMIN_LOGIN_REDACTED'"
+call_json "GET /api/auth/me (USER)" "curl -s '$BASE/api/auth/me' -H '$USER_AUTH'"
+call_json "GET /api/resources" "curl -s '$BASE/api/resources' -H '$USER_AUTH'"
+call_json "GET /api/bookings (ADMIN)" "curl -s '$BASE/api/bookings' -H '$ADMIN_AUTH'"
+call_json "GET /api/bookings/my-bookings (USER)" "curl -s '$BASE/api/bookings/my-bookings' -H '$USER_AUTH'"
+call_json "GET /api/tickets (ADMIN)" "curl -s '$BASE/api/tickets' -H '$ADMIN_AUTH'"
+call_json "GET /api/tickets/technician/{id} (TECHNICIAN)" "curl -s '$BASE/api/tickets/technician/3' -H '$TECH_AUTH'"
+call_json "GET /api/notifications/unread/count (USER)" "curl -s '$BASE/api/notifications/unread/count' -H '$USER_AUTH'"
+call_json "GET /api/admin/command-center (ADMIN)" "curl -s '$BASE/api/admin/command-center' -H '$ADMIN_AUTH'"
 
 echo ""
 echo "$DIVIDER"
-echo "  ✅  All API tests complete — screenshot this terminal for evidence."
+echo "API evidence complete."
 echo "$DIVIDER"
-echo ""

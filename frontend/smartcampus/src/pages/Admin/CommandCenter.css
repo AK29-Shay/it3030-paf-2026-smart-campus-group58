@@ -1,0 +1,355 @@
+.command-layout {
+  background: linear-gradient(180deg, #f7f9ff 0%, #ffffff 100%);
+}
+
+.command-shell {
+  gap: 1rem;
+}
+
+.command-head {
+  background: linear-gradient(130deg, #152457 0%, #274271 52%, #1f604f 100%);
+}
+
+.command-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.command-head-actions span {
+  color: #d7e5ff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0.55rem 0.72rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.command-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.85rem;
+}
+
+.command-stat-card,
+.command-panel,
+.command-state-panel {
+  border: 1px solid #e3e9f8;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 22px rgba(26, 31, 90, 0.08);
+}
+
+.command-stat-card {
+  padding: 1rem;
+  min-height: 136px;
+  display: grid;
+  align-content: space-between;
+  border-top: 5px solid #3653a5;
+}
+
+.command-stat-card span {
+  color: #6b7ba4;
+  font-weight: 800;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.command-stat-card strong {
+  color: #1a1f5a;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.command-stat-card p {
+  margin: 0;
+  color: #6b7ba4;
+  font-size: 0.86rem;
+}
+
+.tone-amber {
+  border-top-color: #f5a623;
+}
+
+.tone-green {
+  border-top-color: #1f8a5f;
+}
+
+.tone-red {
+  border-top-color: #d64242;
+}
+
+.tone-blue {
+  border-top-color: #4169d8;
+}
+
+.command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
+  gap: 0.95rem;
+}
+
+.command-grid-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.command-panel {
+  padding: 1rem;
+  min-width: 0;
+}
+
+.command-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.command-panel-head p {
+  margin: 0;
+  color: #6b7ba4;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.command-panel-head h2 {
+  margin: 0.25rem 0 0;
+  color: #1a1f5a;
+  font-size: 1.15rem;
+}
+
+.command-panel-head a {
+  color: #274271;
+  background: #f0f4ff;
+  border: 1px solid #e3e9f8;
+  border-radius: 8px;
+  padding: 0.42rem 0.62rem;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.command-trend-chart {
+  min-height: 210px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.command-trend-col {
+  display: grid;
+  gap: 0.44rem;
+  justify-items: center;
+  min-width: 0;
+}
+
+.command-trend-col span,
+.command-trend-col strong {
+  color: #6b7ba4;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.command-trend-track {
+  width: 100%;
+  height: 138px;
+  border: 1px solid #e3e9f8;
+  background: #f7f9ff;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.command-trend-fill {
+  width: 100%;
+  min-height: 5px;
+  background: linear-gradient(180deg, #5c7cfa 0%, #1f8a5f 100%);
+}
+
+.command-alert-list,
+.command-demand-list,
+.command-watchlist {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.command-alert,
+.command-demand-item,
+.command-ticket-row {
+  border: 1px solid #e7ebf7;
+  background: #fbfcff;
+  border-radius: 8px;
+  padding: 0.82rem;
+}
+
+.command-alert {
+  border-left: 5px solid #4169d8;
+}
+
+.severity-high {
+  border-left-color: #d64242;
+}
+
+.severity-medium {
+  border-left-color: #f5a623;
+}
+
+.severity-info {
+  border-left-color: #1f8a5f;
+}
+
+.command-alert span {
+  color: #6b7ba4;
+  font-weight: 900;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.command-alert h3 {
+  margin: 0.22rem 0 0.35rem;
+  color: #1a1f5a;
+  font-size: 0.96rem;
+}
+
+.command-alert p,
+.command-alert strong,
+.command-demand-item p,
+.command-ticket-row span {
+  margin: 0;
+  color: #6b7ba4;
+  font-size: 0.84rem;
+}
+
+.command-alert strong {
+  display: block;
+  margin-top: 0.42rem;
+  color: #274271;
+}
+
+.command-demand-item {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.command-demand-item > div:first-child,
+.command-ticket-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.command-demand-item strong,
+.command-ticket-row strong {
+  color: #1a1f5a;
+}
+
+.command-demand-item span {
+  color: #1f8a5f;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.command-demand-meter {
+  height: 9px;
+  border-radius: 999px;
+  background: #edf1fb;
+  overflow: hidden;
+}
+
+.command-demand-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f5a623 0%, #1f8a5f 100%);
+}
+
+.command-ticket-row > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.command-ticket-row > div:last-child {
+  color: #274271;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.command-ticket-row > div:last-child.is-breached {
+  color: #d64242;
+}
+
+.command-empty {
+  margin: 0;
+  color: #6b7ba4;
+  border: 1px dashed #cfd8ec;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.command-state-panel {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.8rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.command-state-panel p {
+  margin: 0;
+  color: #6b7ba4;
+  max-width: 520px;
+}
+
+.command-error-panel h2 {
+  margin: 0;
+  color: #1a1f5a;
+}
+
+.command-loader {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 4px solid #e3e9f8;
+  border-top-color: #274271;
+  animation: command-spin 0.8s linear infinite;
+}
+
+@keyframes command-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1040px) {
+  .command-grid,
+  .command-grid-secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .command-head-actions {
+    justify-content: flex-start;
+  }
+
+  .command-trend-chart {
+    gap: 0.35rem;
+  }
+
+  .command-demand-item > div:first-child,
+  .command-ticket-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -2,12 +2,14 @@ package com.project.smartcampus.controller;
 
 import com.project.smartcampus.dto.BookingRequest;
 import com.project.smartcampus.dto.BookingResponse;
+import com.project.smartcampus.dto.PublicBookingResponse;
 import com.project.smartcampus.dto.RejectBookingRequest;
 import com.project.smartcampus.enums.BookingStatus;
 import com.project.smartcampus.services.BookingService;
 import com.project.smartcampus.services.UserService;
 
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -37,11 +39,11 @@ public class BookingController {
 
     // Create a new booking - accessible to authenticated users
     @PostMapping
-    public BookingResponse createBooking(
+    public ResponseEntity<BookingResponse> createBooking(
             @Valid @RequestBody BookingRequest request,
             Authentication authentication) {
         request.setBookedBy(userService.extractUserEmail(authentication));
-        return service.createBooking(request);
+        return new ResponseEntity<>(service.createBooking(request), HttpStatus.CREATED);
     }
 
     // Get all bookings with optional filters - accessible to admins only
@@ -63,7 +65,12 @@ public class BookingController {
         return service.getUserBookingsFiltered(userEmail, resourceName, status);
     }
 
-    // Get booking by ID - accessible to users
+    @GetMapping("/public/{id}")
+    public PublicBookingResponse getPublicBookingById(@PathVariable Long id) {
+        return service.getPublicBookingById(id);
+    }
+
+    // Get booking by ID - accessible to authenticated users
     @GetMapping("/{id}")
     public BookingResponse getBookingById(@PathVariable Long id) {
         return service.getBookingById(id);
@@ -110,8 +117,9 @@ public class BookingController {
 
     // Delete a booking 
     @DeleteMapping("/{id}")
-    public void deleteBooking(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
         service.deleteBooking(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Search for bookings by resource name

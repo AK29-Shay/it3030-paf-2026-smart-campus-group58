@@ -4,11 +4,13 @@ package com.project.smartcampus.services;
 import com.project.smartcampus.config.MongoIdGenerator;
 import com.project.smartcampus.dto.BookingRequest;
 import com.project.smartcampus.dto.BookingResponse;
+import com.project.smartcampus.dto.PublicBookingResponse;
 import com.project.smartcampus.entity.Booking;
 import com.project.smartcampus.entity.Resource;
 import com.project.smartcampus.enums.BookingStatus;
 import com.project.smartcampus.enums.ResourceStatus;
 import com.project.smartcampus.exception.BookingConflictException;
+import com.project.smartcampus.exception.ResourceNotFoundException;
 import com.project.smartcampus.repository.BookingRepository;
 import com.project.smartcampus.repository.ResourceRepository;
 import com.project.smartcampus.repository.UserRepository;
@@ -56,7 +58,7 @@ public class BookingService {
                                         "Start time must be in the future");
                 }
 
-                if (booking.getEndTime().isBefore(booking.getStartTime())) {
+                if (!booking.getEndTime().isAfter(booking.getStartTime())) {
                         throw new BookingConflictException(
                                         "End time must be after start time");
                 }
@@ -76,7 +78,6 @@ public class BookingService {
                 booking.setStatus(BookingStatus.PENDING);
 
                 Booking saved = repository.save(booking);
-                notifyBookingApproved(saved);
                 return mapToResponse(saved);
         }
 
@@ -168,8 +169,14 @@ public class BookingService {
 
         public BookingResponse getBookingById(Long id) {
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
                 return mapToResponse(booking);
+        }
+
+        public PublicBookingResponse getPublicBookingById(Long id) {
+                Booking booking = repository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+                return mapToPublicResponse(booking);
         }
 
         public BookingResponse updateBooking(Long id, BookingRequest request) {
@@ -178,7 +185,7 @@ public class BookingService {
                 Booking updatedBooking = mapToEntity(request);
 
                 Booking existing = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (existing.getStatus() != BookingStatus.PENDING) {
                         throw new BookingConflictException(
@@ -190,7 +197,7 @@ public class BookingService {
                                         "Start time must be in the future");
                 }
 
-                if (updatedBooking.getEndTime().isBefore(updatedBooking.getStartTime())) {
+                if (!updatedBooking.getEndTime().isAfter(updatedBooking.getStartTime())) {
                         throw new BookingConflictException(
                                         "End time must be after start time");
                 }
@@ -220,7 +227,7 @@ public class BookingService {
         public BookingResponse approveBooking(Long id) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow();
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (booking.getStatus() != BookingStatus.PENDING) {
                         throw new BookingConflictException(
@@ -240,14 +247,14 @@ public class BookingService {
                 booking.setQrCode(qrPath);
 
                 Booking saved = repository.save(booking);
-                notifyBookingRejected(saved);
+                notifyBookingApproved(saved);
                 return mapToResponse(saved);
         }
 
         public BookingResponse rejectBooking(Long id, String reason) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (booking.getStatus() != BookingStatus.PENDING) {
                         throw new BookingConflictException(
@@ -258,13 +265,15 @@ public class BookingService {
 
                 booking.setRejectionReason(reason);
 
-                return mapToResponse(repository.save(booking));
+                Booking saved = repository.save(booking);
+                notifyBookingRejected(saved);
+                return mapToResponse(saved);
         }
 
         public BookingResponse cancelBooking(Long id) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (booking.getStatus() != BookingStatus.APPROVED) {
                         throw new BookingConflictException(
@@ -279,7 +288,7 @@ public class BookingService {
         public BookingResponse regenerateQr(Long id) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (booking.getStatus() != BookingStatus.APPROVED) {
                         throw new BookingConflictException(
@@ -295,7 +304,7 @@ public class BookingService {
         public void deleteBooking(Long id) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 if (booking.getStatus() != BookingStatus.PENDING) {
                         throw new BookingConflictException(
@@ -348,7 +357,7 @@ public class BookingService {
                 }
 
                 // Rule 2 — End must be after start
-                if (end.isBefore(start)) {
+                if (!end.isAfter(start)) {
                         throw new BookingConflictException(
                                         "End time must be after start time");
                 }
@@ -366,16 +375,12 @@ public class BookingService {
         public BookingResponse checkIn(Long id) {
 
                 Booking booking = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Booking not found"));
-
-                // Debug print
-                System.out.println("Booking ID: " + id);
-                System.out.println("Current Status: " + booking.getStatus());
+                                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
 
                 // Check status safely
                 if (!BookingStatus.APPROVED.equals(booking.getStatus())) {
 
-                        throw new RuntimeException(
+                        throw new BookingConflictException(
                                         "Booking must be APPROVED to check in. Current status: "
                                                         + booking.getStatus());
                 }
@@ -425,6 +430,19 @@ public class BookingService {
                 response.setQrCode(booking.getQrCode());
                 response.setCheckedInTime(booking.getCheckedInTime());
                 return response;
+        }
+
+        private PublicBookingResponse mapToPublicResponse(Booking booking) {
+                return PublicBookingResponse.builder()
+                                .id(booking.getId())
+                                .resourceName(booking.getResourceName())
+                                .purpose(booking.getPurpose())
+                                .attendees(booking.getAttendees())
+                                .startTime(booking.getStartTime())
+                                .endTime(booking.getEndTime())
+                                .status(booking.getStatus())
+                                .checkedInTime(booking.getCheckedInTime())
+                                .build();
         }
 
         private void notifyBookingApproved(Booking booking) {

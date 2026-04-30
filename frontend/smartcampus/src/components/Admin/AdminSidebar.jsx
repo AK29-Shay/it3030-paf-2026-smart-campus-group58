@@ -21,6 +21,7 @@ function AdminSidebar() {
     { to: "/admin/resources", label: "Resources" },
     { to: "/admin/bookings", label: "Bookings", end: true },
     { to: "/tickets/admin", label: "Tickets", end: true },
+    { to: "/admin/command-center", label: "Command Center" },
   ];
 
   return (

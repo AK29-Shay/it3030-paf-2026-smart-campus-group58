@@ -1,0 +1,18 @@
+flowchart TB
+    Client[React Client] --> Controllers[REST Controllers]
+    Controllers --> Auth[Auth and User Services]
+    Controllers --> Resource[Resource Service]
+    Controllers --> Booking[Booking Service]
+    Controllers --> Ticket[Ticket Service]
+    Controllers --> Notify[Notification Service]
+    Controllers --> Command[Command Center Service]
+    Booking --> QR[QRCode Service]
+    Auth --> UserRepo[User Repository]
+    Resource --> ResourceRepo[Resource Repository]
+    Booking --> BookingRepo[Booking Repository]
+    Ticket --> TicketRepo[Ticket and Comment Repositories]
+    Notify --> NotificationRepo[Notification Repository]
+    Command --> BookingRepo
+    Command --> ResourceRepo
+    Command --> TicketRepo
+    Command --> UserRepo

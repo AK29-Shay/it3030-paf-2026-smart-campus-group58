@@ -22,6 +22,7 @@ import UserManagement from "./pages/Admin/UserManagement";
 import ResourceList from "./pages/Resource/ResourceList";
 import AdminResourcePage from "./pages/Resource/AdminResourcePage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import CommandCenter from "./pages/Admin/CommandCenter";
 import MockScannerPage from "./pages/Booking/MockScannerPage";
 import MockVerifyPage from "./pages/Booking/MockVerifyPage";
 
@@ -222,6 +223,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <BookingAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/command-center"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <CommandCenter />
               </ProtectedRoute>
             }
           />

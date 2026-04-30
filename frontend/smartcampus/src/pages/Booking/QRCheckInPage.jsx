@@ -37,7 +37,7 @@ function QRCheckInPage() {
   const fetchBooking = async () => {
     try {
       setLoading(true);
-      const response = await API.get(`/bookings/${id}`);
+      const response = await API.get(`/bookings/public/${id}`);
       setBooking(response.data);
       setApiAvailable(true);
     } catch (err) {
@@ -119,7 +119,7 @@ function QRCheckInPage() {
 
             <div className="detail-item">
               <span className="detail-label">Booked By</span>
-              <span className="detail-value">{booking.bookedBy}</span>
+              <span className="detail-value">{booking.bookedBy || "Hidden for public QR lookup"}</span>
             </div>
 
             <div className="detail-item">

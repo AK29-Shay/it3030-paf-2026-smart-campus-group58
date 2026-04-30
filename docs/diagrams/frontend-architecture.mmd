@@ -1,0 +1,15 @@
+flowchart TB
+    App[App.jsx Router] --> Protected[ProtectedRoute]
+    App --> AuthPages[Login, Signup, OAuth Redirect]
+    App --> ResourcePages[Resource Catalogue and Admin Resource Page]
+    App --> BookingPages[Bookings, Calendar, Admin Review, QR Verify]
+    App --> TicketPages[Ticket Create, My Tickets, Admin Tickets, Technician Tickets]
+    App --> NotificationPages[Notification Bell, Dropdown, List]
+    App --> AdminPages[Admin Dashboard, Users, Command Center]
+    Protected --> AuthContext[AuthContext]
+    AuthContext --> AuthService[authService]
+    ResourcePages --> API[Axios API Layer]
+    BookingPages --> API
+    TicketPages --> API
+    NotificationPages --> API
+    AdminPages --> API
