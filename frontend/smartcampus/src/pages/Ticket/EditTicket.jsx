@@ -40,6 +40,9 @@ function EditTicket() {
     description: "",
     category: "",
     priority: "",
+    location: "",
+    preferredContact: "",
+    resourceHint: "",
   });
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(true);
@@ -60,6 +63,9 @@ function EditTicket() {
         description: data?.description || "",
         category: data?.category || "",
         priority: data?.priority || "",
+        location: data?.location || "",
+        preferredContact: data?.preferredContact || "",
+        resourceHint: data?.resourceHint || "",
       });
     } catch (error) {
       console.error("Failed to load ticket:", error);
