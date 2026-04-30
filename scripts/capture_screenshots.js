@@ -72,6 +72,43 @@ async function login(page, role) {
   }
 }
 
+async function apiLogin(role) {
+  const account = accounts[role];
+  const response = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(account),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.json();
+}
+
+async function resolveQrLookupPath() {
+  try {
+    const auth = await apiLogin("ADMIN");
+    if (!auth?.token) {
+      return "/qr-verify/1";
+    }
+
+    const response = await fetch(`${API_BASE}/api/bookings`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    if (!response.ok) {
+      return "/qr-verify/1";
+    }
+
+    const bookings = await response.json();
+    const booking = bookings.find((item) => ["APPROVED", "CHECKED_IN"].includes(item.status)) || bookings[0];
+    return booking?.id ? `/qr-verify/${booking.id}` : "/qr-verify/1";
+  } catch {
+    return "/qr-verify/1";
+  }
+}
+
 async function captureRolePages(browser, role, pages) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 950 });
@@ -183,6 +220,7 @@ async function main() {
   const browser = await puppeteer.launch({ headless: "new" });
 
   if (CAPTURE_MODE === "all" || CAPTURE_MODE === "ui") {
+    const qrLookupPath = await resolveQrLookupPath();
     const publicPage = await browser.newPage();
     await publicPage.setViewport({ width: 1440, height: 950 });
     for (const item of [
@@ -190,7 +228,7 @@ async function main() {
       { name: "02_login", path: "/login" },
       { name: "03_signup", path: "/signup" },
       { name: "04_forgot_password", path: "/forgot-password" },
-      { name: "05_qr_public_lookup", path: "/qr-verify/1" },
+      { name: "05_qr_public_lookup", path: qrLookupPath },
     ]) {
       try {
         await capturePage(publicPage, item.name, `${FRONTEND_BASE}${item.path}`);

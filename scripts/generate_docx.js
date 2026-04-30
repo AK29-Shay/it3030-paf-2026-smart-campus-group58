@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 const { marked } = require("marked");
 const HTMLToDOCX = require("html-to-docx");
 
@@ -7,13 +8,70 @@ const ROOT = path.resolve(__dirname, "..");
 const markdownPath = path.join(ROOT, "docs", "Final_Report_Draft.md");
 const docxPath = path.join(ROOT, "docs", "Final_Report.docx");
 
+const diagramImages = [
+  "diagrams/overall-architecture.png",
+  "diagrams/rest-api-architecture.png",
+  "diagrams/frontend-architecture.png",
+];
+
+function titleFromFile(filePath) {
+  return path
+    .basename(filePath, path.extname(filePath))
+    .replace(/^\d+_/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function imageDataUri(src) {
+  const normalized = src.replace(/\\/g, "/").replace(/^docs\//, "");
+  const absolutePath = path.join(ROOT, "docs", normalized);
+
+  if (!fs.existsSync(absolutePath)) {
+    return src;
+  }
+
+  const extension = path.extname(absolutePath).slice(1).toLowerCase() || "png";
+  const mime = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
+  const encoded = fs.readFileSync(absolutePath).toString("base64");
+  return `data:${mime};base64,${encoded}`;
+}
+
+function prepareMarkdown(markdown) {
+  let diagramIndex = 0;
+
+  return markdown
+    .replace(/```mermaid\n[\s\S]*?```/g, () => {
+      const src = diagramImages[diagramIndex] || diagramImages[diagramImages.length - 1];
+      diagramIndex += 1;
+      return `![${titleFromFile(src)}](${src})`;
+    })
+    .replace(/\*\*Screenshot placeholder:\*\* Insert generated .*? diagram image here\.\n?/g, "")
+    .replace(
+      /- Insert screenshot `docs\/screenshots\/([^`]+)`/g,
+      (_, fileName) => `![Screenshot: ${titleFromFile(fileName)}](screenshots/${fileName})`,
+    );
+}
+
+function embedLocalImages(html) {
+  return html.replace(/<img src="([^"]+)" alt="([^"]*)">/g, (match, src, alt) => {
+    const dataUri = imageDataUri(src);
+    const caption = alt ? `<p class="caption">${alt}</p>` : "";
+    return `<p><img src="${dataUri}" alt="${alt}" width="650" /></p>${caption}`;
+  });
+}
+
 async function main() {
   if (!fs.existsSync(markdownPath)) {
     throw new Error(`Missing report draft: ${markdownPath}`);
   }
 
-  const markdown = fs.readFileSync(markdownPath, "utf8");
-  const html = marked.parse(markdown);
+  execFileSync("node", ["scripts/generate_diagrams.js"], {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
+
+  const markdown = prepareMarkdown(fs.readFileSync(markdownPath, "utf8"));
+  const html = embedLocalImages(marked.parse(markdown));
   const documentHtml = `
     <!doctype html>
     <html>
@@ -30,6 +88,9 @@ async function main() {
           th { background: #eef2ff; font-weight: bold; }
           code, pre { font-family: Consolas, monospace; }
           pre { background: #f3f4f6; padding: 8pt; white-space: pre-wrap; }
+          figure { margin: 10pt 0 14pt; page-break-inside: avoid; }
+          img { max-width: 100%; height: auto; border: 1px solid #d1d5db; }
+          .caption { font-size: 9pt; color: #4b5563; margin: 3pt 0 8pt; font-style: italic; }
         </style>
       </head>
       <body>${html}</body>

@@ -146,10 +146,10 @@ Implemented resource catalogue and admin resource management.
 | PUT | `/api/resources/{id}` | Update a resource. |
 | DELETE | `/api/resources/{id}` | Delete a resource. |
 
-UI evidence placeholders:
+UI evidence:
 
-- Insert screenshot `docs/screenshots/07_resources.png`
-- Insert screenshot `docs/screenshots/18_admin_resources.png`
+![Screenshot: Resources catalogue](screenshots/07_resources.png)
+![Screenshot: Admin resources](screenshots/18_admin_resources.png)
 
 ### Abinayan - Booking Management
 
@@ -162,12 +162,12 @@ Implemented booking requests, conflict prevention, admin review, QR regeneration
 | PUT | `/api/bookings/{id}/approve` | Approve a pending booking. |
 | DELETE | `/api/bookings/{id}` | Delete a pending booking. |
 
-UI evidence placeholders:
+UI evidence:
 
-- Insert screenshot `docs/screenshots/08_booking_list.png`
-- Insert screenshot `docs/screenshots/09_booking_calendar.png`
-- Insert screenshot `docs/screenshots/19_admin_bookings.png`
-- Insert screenshot `docs/screenshots/05_qr_public_lookup.png`
+![Screenshot: Booking list](screenshots/08_booking_list.png)
+![Screenshot: Booking calendar](screenshots/09_booking_calendar.png)
+![Screenshot: Admin bookings](screenshots/19_admin_bookings.png)
+![Screenshot: QR public lookup](screenshots/05_qr_public_lookup.png)
 
 ### Sneha - Maintenance and Incident Ticketing
 
@@ -180,12 +180,12 @@ Implemented ticket creation, image uploads, assignment, status updates, comments
 | PUT | `/api/tickets/{ticketId}/status` | Update ticket status. |
 | DELETE | `/api/tickets/{ticketId}/comments/{commentId}` | Delete a comment with ownership rules. |
 
-UI evidence placeholders:
+UI evidence:
 
-- Insert screenshot `docs/screenshots/11_create_ticket.png`
-- Insert screenshot `docs/screenshots/12_my_tickets.png`
-- Insert screenshot `docs/screenshots/15_technician_tickets.png`
-- Insert screenshot `docs/screenshots/20_admin_tickets.png`
+![Screenshot: Create ticket](screenshots/11_create_ticket.png)
+![Screenshot: My tickets](screenshots/12_my_tickets.png)
+![Screenshot: Technician tickets](screenshots/15_technician_tickets.png)
+![Screenshot: Admin tickets](screenshots/20_admin_tickets.png)
 
 ### Akshayan - Auth, Notifications, Roles, and Innovation
 
@@ -199,28 +199,28 @@ Implemented OAuth/JWT authentication, protected routes, notifications, user role
 | DELETE | `/api/notifications/{id}` | Delete notification. |
 | GET | `/api/admin/command-center` | Admin-only innovation analytics snapshot. |
 
-UI evidence placeholders:
+UI evidence:
 
-- Insert screenshot `docs/screenshots/02_login.png`
-- Insert screenshot `docs/screenshots/13_notifications.png`
-- Insert screenshot `docs/screenshots/21_user_management.png`
-- Insert screenshot `docs/screenshots/17_command_center.png`
+![Screenshot: Login](screenshots/02_login.png)
+![Screenshot: Notifications](screenshots/13_notifications.png)
+![Screenshot: User management](screenshots/21_user_management.png)
+![Screenshot: Command Center](screenshots/17_command_center.png)
 
 ## 7. GitHub
 
 **Repository Link:** https://github.com/AK29-Shay/it3030-paf-2026-smart-campus-group58  
 **OneDrive Link:** Insert final shared submission folder link here.
 
-GitHub evidence placeholders:
+GitHub evidence:
 
-- Insert screenshot `docs/screenshots/23_github_commits.png`
-- Insert screenshot `docs/screenshots/24_github_branches.png`
-- Insert screenshot `docs/screenshots/25_github_pull_requests.png`
+![Screenshot: GitHub commits](screenshots/23_github_commits.png)
+![Screenshot: GitHub branches](screenshots/24_github_branches.png)
+![Screenshot: GitHub pull requests](screenshots/25_github_pull_requests.png)
 
-Testing and database evidence placeholders:
+Testing and database evidence:
 
-- Insert screenshot `docs/screenshots/26_mongodb_collections.png`
-- Insert screenshot `docs/screenshots/27_api_curl_evidence.png`
+![Screenshot: MongoDB collections](screenshots/26_mongodb_collections.png)
+![Screenshot: API curl evidence](screenshots/27_api_curl_evidence.png)
 - Evidence scripts: `scripts/query_mongodb.py`, `scripts/api_tests.sh`, and Windows-compatible `scripts/api_tests.ps1`.
 
 Deployment evidence:
