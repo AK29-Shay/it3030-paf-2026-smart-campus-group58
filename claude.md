@@ -44,7 +44,10 @@ Spin up the local development servers (or use the deployed URLs). Use your brows
 Create a markdown file (`Final_Report_Draft.md`) containing the text for the final PDF submission. It must include:
 1. **Introduction**
 2. **Functional & Non-Functional Requirements**
-3. **Architecture Diagrams:** Use Mermaid.js syntax for the Overall, REST API, and Frontend architectures.
-4. **System Functions:** Detail the specific endpoint and UI contributions of Nethmini, Abinayan, Sneha, and Akshayan.
-5. **AI Disclosure Statement:** Draft a statement acknowledging the use of AI tools for code generation and testing per the SLIIT academic integrity rubric.
-6. **Image Placeholders:** Clearly mark where the screenshots you saved in step 6 should be inserted.
+3. **Architecture Diagrams:** Use Mermaid.js syntax for the Overall, REST API, and Frontend architectures and generate diagram with image generation
+4. **REST API Architecture diagram:** - use same method like architecture diagram 
+5. **Frontend Architecture Diagram:** - use same method like architecture diagram
+5. **System Functions:** Detail the specific endpoint and UI contributions of Nethmini, Abinayan, Sneha, and Akshayan.
+6. **GitHub:** - GitHub Repo link, OneDrive Link, Image of the GitHub Commit Tree
+7. **AI Disclosure Statement:** Draft a statement acknowledging the use of AI tools for code generation and testing per the SLIIT academic integrity rubric.
+8. **Image Placeholders:** Clearly mark where the screenshots you saved in step 6 should be inserted.
